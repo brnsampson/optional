@@ -3,7 +3,8 @@ Go library for working with optional values
 
 ## What?
 
-Have you ever needed to represent "something or nothing"? It's common in go to use a pointer for this.
+Have you ever needed to represent "something or nothing"? It's common in go to use a pointer for this, but in some
+situations that can add complexity or is otherwise undesirable.
 
 This package aims to provide an alternative, which is the "Optional". An Optional puts another type in a box which can
 either be "Some" or "None". That, and a small handful of methods to interact with the inner value, is pretty much it.
@@ -16,194 +17,109 @@ using a pointer would bring so that you can implement what you need quickly with
 is an issue, then you can always replace these with pointers later.
 
 Really, this is a generic solution to a common problem: How do you represent _NOT_ a thing? Often we can find a particular
-value in the domain of our type which is not a valid value for our application and use that. Have a field for email address?
-An empty string can be used as your None value. Port number? Pick anything above 65,535 to represent "None selected". Sometimes,
-however, there is no obvious invalid value of your type in your use case. Moreover, you sometimes need to differentiate
-between "default" and "None", and in those cases you actually need two values which are both invalid for your application!
+"magic value" in the domain of our type which is not a valid value for our application and use that. Have a field for
+email address? An empty string can be used as your None value. Port number? Pick anything above 65,535 to represent
+"None selected". Sometimes, however, there is no obvious invalid value of your type in your use case. Moreover, you
+sometimes need to differentiate between "default" and "None", and in those cases you actually need two values which are
+both invalid for your application!
 
 Disclamer: I'm sure you could find exciting new ways to shoot yourself in the foot if you tried to create an optional
 of a pointer type (or a struct which contains pointer fields). You can definitely do it, I just don't advise doing so
 unless you know what you are doing.
+
+## Where?
+
+Where Optionals really shine, are situations which are not performance sensitive in the first place. Configuration
+is probably the best example, particularly if you are drawing configs from multiple sources and merging them together.
+I actually first wrote this in a fit of irritation after tracking down a nil-pointer deference in a configuration
+package for longer than it took to write the package.
+
+## How?
+
+See the example/ directory for a setup for brain-dead config parsing. Sure, it's verbose for a single parameter and there
+are is a lot of error handling, but nothing is going to go wrong and it won't get more complicated as you add more
+configuration.
+
+If you want to try it, it was written so that the precedence is flags > file > env. Right now, the file has the host set
+but the port is defaulting to 1443.
+
+Try running it a few different ways and seeing what happens!
+```bash
+go run ./example
+PORT=3000 go run ./example
+PORT=3000 go run ./example --port 4000
+PORT=3000 go run ./example --port 4000 --host "example.com"
+```
 
 ## State of the art
 
 Currently, some other packages do provide a similar experience. There are a few issues that I have which are not addressed
 by the ones I am aware of, however.
 
-https://github.com/googleapis/google-cloud-go/tree/main/internal/optional
+### [markphelips/optional](https://github.com/markphelps/optional)
 
-Pros: uh...
-Cons: internal to a repo? Requires you to call a function that does type checking everytime you want to use a value? Meh.
+#### Pros
+ - should be somewhat performant due to just using a pointer under the hood
+ - ergonomics pretty good
 
-https://github.com/markphelps/optional
+#### Cons
+ - one optional type per underlying type
+ - Requires a go generate script to support any non-implemented type
+ - Doesn't support some useful features like applying transforms to the value inside the option
+ - You could be surprised if you store one of these types in a struct since they are values wrapping pointers, and that would be a nasty debugging session.
 
-Pros: should be somewhat performant due to just using a pointer under the hood, ergonomics pretty good
-Cons: one optional type per underlying type. Requires a go generate script to support any non-implemented type. Doesn't
-    support some useful features like applying transforms to the value inside the option. You could be surprised if you
-    store one of these types in a struct since they are values wrapping pointers, and that would be a nasty debugging session.
+### [leighmcculloch go-optional](https://github.com/leighmcculloch/go-optional)
 
-https://github.com/leighmcculloch/go-optional
+#### Pros
+ - Generic so it can be applied to any type
+ - short and sweet
+ - supports JSON and XML marshaling/unmarshaling
 
-Pros: Generic so it can be applied to any type, short and sweet, supports JSON and XML marshaling/unmarshaling
-Cons: Generic over `any`, so things like equality can't be supported. I don't know if using an internal array is any more
-    efficient than a boolean to represent Some/None. The Marshaling/Unmarshaling uses the zero values to represent None
-    instead of `null`, removing much of the benefit there. Methods like `String()` uses Sprintf, which uses reflection.
-    There is poor performance, then there is reflection performance.
+#### Cons
+ - Generic over `any`, so things like equality can't be supported
+ - I don't know if using an internal array is any more efficient than a boolean to represent Some/None
+ - The Marshaling/Unmarshaling uses the zero values to represent None instead of `null`, removing much of the benefit there
+ - Methods like `String()` uses Sprintf, which uses reflection. There is poor performance, then there is reflection performance.
 
-Magic Numbers:
+### Magic Values
+This is just when you use a specific value to represent your `None`. Sometimes this makes sense, such as when you have
+a string field where an empty string would be meaningless.
 
-Pros: Easy to use by just defining a const in your package. Possibly the most efficient way to do this.
-Cons: You don't always an invalid value to use as your magic number, so it's just impossible sometimes.
+#### Pros
+ - Easy to use by just defining a const in your package
+ - Possibly the most efficient way to do this
 
-Pointers:
+#### Cons
+ - You don't always an invalid value to use as your magic value, so it's just impossible sometimes.
+ - Ergonomics can get messy; different libraries may return different magic values which you have to translate between
 
-Pros: Effective and fast. Just a nil check tells you if a value is set or not.
-Cons: Nil checks everywhere. It's on you to check for nil before _every_ use, and the consequences of forgetting is a nil
-    pointer dereference panic. Makes for more difficult to read and reason about code when things get complicated. If you
-    every pass a struct by value your invariants can be broken by methods modifying some fields only in the copied struct
+### Pointers
+
+#### Pros
+ - Effective and fast. Just a nil check tells you if a value is set or not.
+
+#### Cons
+ - Nil checks everywhere. It's on you to check for nil before _every_ use, and the consequences of forgetting is a nil
+pointer dereference panic.
+ - Makes for more difficult to read and reason about code at a surprisingly low level of complexity
+  - If you every pass a struct by value your invariants can be broken by methods modifying some fields only in the copied struct
     and others in the copied and original struct. You need to be _very_ careful if you do that.
 
-This package:
+### This package
 
-Pros: Ergonomics pretty good, no surprises, generic implementation means all types can be used in the same way. Methods
-    for performing transforms on data without extracting it first. Specialized optional types can be built on top to
-    provide any needed functionality for specific use cases.
-Cons: Inefficient in terms of space and likely performance. Core Option type is limited in implementing convenient
-    stdlib interfaces due to the use of generics.
+#### Pros
+ - Ergonomics pretty good
+ - No surprises
+ - Generic implementation means all types can be used in the same way
+ - Methods for performing transforms on data without extracting it first
+ - Specialized optional types can be built on top to provide any needed functionality for specific use cases.
 
-## Why do you even have Unwrap()? It seems like a less convenient version of Get().
-
-Yep. On the one hand, I like the idea of options being values. They could be passed around and referenced easily without
-worrying about consequences.
-
-In practice, I find I actually need pointers to options most of the time. They are things meant to be consumed rather than
-passed around a lot, and as such when the thing that actually needs them uses them, I don't really want them to stick
-around going forward.
-
-
-## Why didn't you just wrap a pointer then do the right thing? Isn't copying things around by value all the time expensive?
-
-1. There is a whole world of hurt in golang around structs with pointer fields. If someone is so foolish as to blindly
-pass such a thing around by value, bad things can happen quickly.
-2. As such, I initially tried to only return pointers to optionals, but given the methods I wanted to provide this didn't
-always work well.
-3. You can always make an option with a pointer inner type if you want that. It probably isn't totally safe in all cases tho.
-
-## Where?
-
-Where Optionals really shine, are situations which are not performance sensitive in the first place. Configuration
-is probably the best example, particularly if you are drawing configs from multiple sources and merging them together.
-I actually first wrote this in a fit of irritation after spending more time tracking down a nil-pointer deference in
-a configuration package for longer than it took to write the package.
-
-## How?
-
-If you have a main package like this:
-
-```go
-package main
-
-import (
-    "os"
-    "my/path/pkg/config"
-    flag "github.com/spf13/pflag"
-)
-
-func main() {
-    fs := flag.NewFlagSet("application", flag.PanicOnError)
-    h := fs.String("host", "", "Host for whatever")
-    fs.Parse(os.Args[1:])
-
-    loader := config.NewConfigLoader()
-    if err := loader.LoadFromFlags(fs); err != nil {
-        panic()
-    }
-    if err := loader.LoadFromEnv(); err != nil {
-        panic()
-    }
-    if err := loader.LoadFromFile("path/to/my/conf.toml"); err != nil {
-        panic()
-    }
-    conf, err := loader.Finalize()
-    if err != nil {
-        panic()
-    }
-
-    // We have a static config! Easy, right?!?! ...right?
-    fmt.Println(conf.Host)
-}
-```
-
-You might create a configuration package like this:
-```go
-package config
-
-import (
-	"github.com/spf13/pflag"
-	"github.com/caarlos0/env"
-    "github.com/BurntSushi/toml"
-    "github.com/charmbracelet/log"
-    "github.com/brnsampson/optional/config"
-)
-
-const DEFAULT_HOST string = "localhost"
-
-type ConfigLoader struct {
-	Host config.StringOption `env:"HOST"`
-}
-
-type Config struct {
-    Host string
-}
-
-// Fun fact, if your config has a sub-struct and you implement the same methods on it, it works pretty well with toml
-// and the env / flag loading methods kind of just nest together like a russian doll.
-func NewConfigLoader() *ConfigLoader {
-    return ConfigLoager{ config.StringNone() }
-}
-
-func (c *ConfigLoader) LoadFromFlags(flags *pflag.FlagSet) error {
-    tmp, err := flags.GetString("host")
-	if err != nil || tmp == "" {
-		log.Debug("Failed to load host from flags")
-	} else {
-        c.Host = option.NewStringOption(tmp)
-    }
-
-    return nil
-}
-
-func (c *ConfigLoader) LoadFromFile(filepath string) error {
-	if _, err := os.Stat(filepath); errors.Is(os.ErrNotExist, err) {
-		return err
-	}
-
-    _, err := toml.DecodeFile(filepath, &c)
-    if err != nil {
-		return err
-    }
-
-	log.Info("Loaded server config from file", "filename", filepath, "config", c)
-
-	return nil
-}
-
-func (c *ConfigLoader) LoadFromEnv() error {
-	if err := env.Parse(c); err != nil {
-		log.Error("Failed to load server config from env variables!")
-		return err
-	}
-
-	log.Debug("Loaded server config from env variables", "config", c)
-	return nil
-}
-
-func (c ConfigLoader) Finalize() (*Config, error) {
-    host := c.Host.UnwrapOrDefault(DEFAULT_HOST)
-    return &Config{host}, nil
-}
-
-```
+#### Cons
+ - Inefficient in terms of space and performance
+ - Core `Option` type is limited in implementing convenient stdlib interfaces due to the use of generics.
+ - To make the thing more useful, only `comparable` values can be wrapped currently. This isn't usually too big of a
+deal for most _values_, but does mean that you cannot create an array option for example
+(but why would you do that?!? Just check for zero len!)
 
 ## Why?
 
@@ -245,7 +161,44 @@ ask me to fix it.
 Actually, on second thought just use TOML or whatever the company told you to use. You're probably just using this for
 boolean feature flags anyways.
 
+## FAQ's
+
+### Why do you even have Unwrap()? It seems like a less convenient version of Get().
+
+Yep. On the one hand, I like the idea of options being values. They could be passed around and referenced easily without
+worrying about consequences.
+
+In practice, I find I actually need pointers to options most of the time. They are things meant to be consumed rather than
+passed around a lot, and as such when the thing that actually needs them uses them, I don't really want them to stick
+around going forward.
+
+As an example, consider a situation where you have a single config loader generating a nested config which includes
+pointers. Maybe one field of your config is a sub-config meant for one component or domain of your application. If that
+struct has pointer fields, then even if the struct is passed into your component by value there will be another pointer
+floating around and accessible in your other code. That _should_ be okay, right? Surely nothing else will call a method
+on the main config struct that might modify its fields right?
+
+Well, maybe we should just make that a pointer so that we can nil it out after the component consumes its config. That
+works, but now we have a nil pointer floating around and something else can still call methods on the main struct to modify
+fields. Did you check that pointer _everywhere_ to make sure you are not dereferencing it when it's nil? Are you _sure_?
+
+Well hey, just make the field an Optional and when the component consumes its part it can call Unwrap() to get the inner
+value and the rest of the struct just has a None Optional left. It has all the same methods and code has to handle the
+errors returned just like normal, but now it won't cause an unhandled panic if you lose focus for more than 10 seconds!
+
+
+### Why didn't you just wrap a pointer then do the right thing? Isn't copying things around by value all the time expensive?
+
+1. There is a whole world of hurt in golang around structs with pointer fields. If someone is so foolish as to blindly
+pass such a thing around by value, bad things can happen quickly.
+2. As such, I initially tried to only return pointers to optionals, but given the methods I wanted to provide this didn't
+always work well.
+3. You can always make an option with a pointer inner type if you want that. It probably isn't totally safe in all cases
+and there is a very real chance that it won't do what you want. YMMV!
+
 ## Generating the keys and certs for testing
+
+This is mostly a reminder for myself, given that the certs only have a lifetime of one year.
 
 ### RSA
 
