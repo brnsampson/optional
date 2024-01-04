@@ -2,8 +2,10 @@ package config_test
 
 import (
 	"os"
+	"bytes"
 	"path/filepath"
 	"testing"
+	"crypto"
 	"crypto/x509"
 	"crypto/rsa"
 	"crypto/ecdsa"
@@ -453,6 +455,41 @@ func TestPrivateKeySetFilePerms(t *testing.T) {
 	s, err := f.Stat()
 	assert.NilError(t, err)
 	assert.Equal(t, config.KeyFilePerms, s.Mode())
+}
+
+func TestPrivateKeyReadCert(t *testing.T) {
+	keyPath := "../tls/rsa/key.pem"
+	certPath := "../tls/rsa/cert.pem"
+	ko := config.SomePrivateKey(keyPath)
+	co := config.SomeCert(certPath)
+
+	key, err := ko.ReadPrivateKey()
+	certificate, err := ko.ReadCert(co)
+	assert.NilError(t, err)
+
+	// Check that the cert loaded correctly
+	certs, err := co.ReadCerts()
+	assert.Assert(t, len(certs) == 1)
+	assert.Assert(t, len(certificate.Certificate) == 1)
+	assert.Assert(t, bytes.Equal(certs[0].Raw, certificate.Certificate[0]))
+
+	// Check that the private key loaded correctly
+	type privKeyInter interface {
+		Public() crypto.PublicKey
+    	Equal(x crypto.PrivateKey) bool
+	}
+
+	switch k1 := key.(type) {
+	case privKeyInter:
+		switch k2 := certificate.PrivateKey.(type) {
+		case privKeyInter:
+			assert.Assert(t, k1.Equal(k2))
+		default:
+			panic("Expected *rsa.PrivateKey to implement the crypto.PrivateKey interface, but it didn't!")
+		}
+	default:
+		panic("Expected key from tls.Certificate to implement the crypto.PrivateKey interface, but it didn't!")
+	}
 }
 
 func TestPrivateKeyReadPrivateKeyRSA(t *testing.T) {

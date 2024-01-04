@@ -96,16 +96,23 @@ func TestTimeIsConfigOptional(t *testing.T) {
 	assert.Assert(t, OT.IsSome())
 }
 
-func TestCertIsCertOptional(t *testing.T) {
+func TestCertIsConfigOptional(t *testing.T) {
 	T := config.SomeCert("/not/a/real/path")
-	var OT config.CertOptional = &T
+	var OT config.ConfigOptional[string] = &T
 
 	assert.Assert(t, OT.IsSome())
 }
 
-func TestPubKeyIsPubKeyOptional(t *testing.T) {
+func TestPubKeyIsConfigOptional(t *testing.T) {
 	T := config.SomePubKey("/not/a/real/path")
-	var OT config.PubKeyOptional = &T
+	var OT config.ConfigOptional[string] = &T
+
+	assert.Assert(t, OT.IsSome())
+}
+
+func TestPrivateKeyIsConfigOptional(t *testing.T) {
+	T := config.SomePrivateKey("/not/a/real/path")
+	var OT config.ConfigOptional[string] = &T
 
 	assert.Assert(t, OT.IsSome())
 }

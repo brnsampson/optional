@@ -12,8 +12,10 @@ import (
 	"github.com/brnsampson/optional"
 )
 
-
-
+// Verifying and setting file permissions for public/private keys and certificates use the following file mode masks.
+// The *Perms modes are the desired permissions, while the *PermsMask consts are such that perms && mask should always
+// be 0. The mask is only needed because _technically_ I suppose you could make a public key mode 600 or something if you
+// really wanted.
 const (
 	KeyFilePerms		fs.FileMode = 0600
 	PubKeyFilePerms		fs.FileMode = 0644
@@ -105,6 +107,8 @@ func writeBlocks(path string, perms, notPerms fs.FileMode, blocks []*pem.Block) 
 	return nil
 }
 
+// Cert wraps an optional path string and provides extra methods for reading, decoding, and writing pem files containing
+// CERTIFICATE blocks.
 type Cert struct {
 	optional.Option[string]
 }
@@ -117,7 +121,8 @@ func NoCert() Cert {
 	return Cert{optional.None[string]()}
 }
 
-// Override Str.Get() to update the behavior of all Get* and Unwrap* functions
+// Overrides Option.Get() to update the behavior of all Get* and Unwrap* functions in order to always return the absolute
+// path of the desired file.
 func (o Cert) Get() (string, error) {
 	inner, err := o.Option.Get()
 	if err != nil {
@@ -220,6 +225,8 @@ func (o Cert) WriteCerts(certs []*x509.Certificate) error {
 	return writeBlocks(path, PubKeyFilePerms, PubKeyFilePermsMask, blocks)
 }
 
+// PubKey wraps an optional path string and provides extra methods for reading, decoding, and writing pem files containing
+// "* PUBLIC KEY" blocks.
 type PubKey struct {
 	optional.Option[string]
 }
@@ -232,7 +239,8 @@ func NoPubKey() PubKey {
 	return PubKey{optional.None[string]()}
 }
 
-// Override Str.Get() to update the behavior of all Get* and Unwrap* functions
+// Overrides Option.Get() to update the behavior of all Get* and Unwrap* functions in order to always return the absolute
+// path of the desired file.
 func (o PubKey) Get() (string, error) {
 	inner, err := o.Option.Get()
 	if err != nil {
@@ -297,6 +305,9 @@ func (o PubKey) SetFilePerms() error {
 	return setFilePerms(tmp, PubKeyFilePerms)
 }
 
+// ReadPublicKeys will return all public keys found in the given filepath or error. The keys may be of type *rsa.PublicKey,
+// *ecdsa.PublicKey, ed25519.PublicKey (Note: that is not a pointer), or *ecdh.PublicKey, depending on the contents of
+// the file.
 func (o PubKey) ReadPublicKeys() (pub []any, err error) {
 	tmp, err := o.Get()
 	if err != nil {
@@ -328,6 +339,9 @@ func (o PubKey) ReadPublicKeys() (pub []any, err error) {
 	return
 }
 
+// WritePublicKey will accept any of an *rsa.PublicKey, *dsa.PublicKey, *ecdsa.PublicKey, ed25519.PublicKey (Note:
+// a pointer), or *ecdh.PublicKey. The key will be encoded and written to the path the PubKey option is set to
+// with file permissions set appropriately.
 func (o PubKey) WritePublicKeys(pubs []any) error {
 	path, err := o.Get()
 	if err != nil {
@@ -347,8 +361,8 @@ func (o PubKey) WritePublicKeys(pubs []any) error {
 	return writeBlocks(path, PubKeyFilePerms, PubKeyFilePermsMask, blocks)
 }
 
-// PrivateKey contains an optional path to a PEM format private key of some format. Methods are provided to read and
-// parse the file into either the individual key or into a tls certificate.
+// PubKey wraps an optional path string and provides extra methods for reading, decoding, and writing pem files containing
+// "* PRIVATE KEY" blocks.
 type PrivateKey struct {
 	optional.Option[string]
 }
@@ -361,7 +375,8 @@ func NoPrivateKey() PrivateKey {
 	return PrivateKey{optional.None[string]()}
 }
 
-// Override Str.Get() to update the behavior of all Get* and Unwrap* functions
+// Overrides Option.Get() to update the behavior of all Get* and Unwrap* functions in order to always return the absolute
+// path of the desired file.
 func (o PrivateKey) Get() (string, error) {
 	inner, err := o.Option.Get()
 	if err != nil {
@@ -437,6 +452,9 @@ func (o PrivateKey) SetFilePerms() error {
 	return nil
 }
 
+// ReadPrivateKey will return the first private key found in the given filepath or error. This may return an *rsa.PrivateKey,
+// *ecdsa.PrivateKey, ed25519.PrivateKey (Note: that is not a pointer), or *ecdh.PrivateKey, depending on the contents of
+// the file.
 func (o PrivateKey) ReadPrivateKey() (key any, err error) {
 	path, err := o.Get()
 	if err != nil {
@@ -467,20 +485,25 @@ func (o PrivateKey) ReadPrivateKey() (key any, err error) {
 	return
 }
 
-func (o PrivateKey) ReadCert(pub PubKeyOptional) (cert tls.Certificate, err error) {
+// ReadCert accepts a Cert struct and returns a tls.Certificate for the keypair if both Optionals are Some. This
+// is going to be the most used case for anyone loading
+func (o PrivateKey) ReadCert(certIn Cert) (cert tls.Certificate, err error) {
 	keyFile, err := o.Get()
 	if err != nil {
 		return
 	}
 
-	pubFile, err := o.Get()
+	certFile, err := certIn.Get()
 	if err != nil {
 		return
 	}
 
-	return tls.LoadX509KeyPair(pubFile, keyFile)
+	return tls.LoadX509KeyPair(certFile, keyFile)
 }
 
+// WritePrivateKey will accept any of an *rsa.PrivateKey, *dsa.PrivateKey, *ecdsa.PrivateKey, ed25519.PrivateKey (Note:
+// a pointer), or *ecdh.PrivateKey. The key will be encoded and written to the path the PrivateKey option is set to
+// with file permissions set appropriately.
 func (o PrivateKey) WritePrivateKey(key any) error {
 	path, err := o.Get()
 	if err != nil {
