@@ -21,20 +21,29 @@ type Optional[T comparable] interface {
 	IsSomeAnd(func(T) bool) bool
 	IsNone() bool
 	Clone() Optional[T]
-	Clear()
-	Set(T)
 	Get() (T, error)
 	GetOr(T) T
-	GetOrInsert(T) T
 	Must() T
-	Unwrap() (T, error)
-	MustUnwrap() T
-	UnwrapOr(T) T
-	UnwrapOrElse(func() T) T
 	Match(T) bool
 	Eq(Optional[T]) bool
 	And(Optional[T]) Optional[T]
 	Or(Optional[T]) Optional[T]
+	// Satisfies encoding.json.Marshaler
+	MarshalJSON() ([]byte, error)
+}
+
+// MutableOptional is a superset of Optional which allows mutating and transforming the wrapped value.
+type MutableOptional[T comparable] interface {
+	Optional[T]
+
+	MutableClone() MutableOptional[T]
+	Clear()
+	Set(T)
+	GetOrInsert(T) T
+	Unwrap() (T, error)
+	MustUnwrap() T
+	UnwrapOr(T) T
+	UnwrapOrElse(func() T) T
 	// Transform only applies the func to the values of Some valued Optionals. Any mapping of None is None.
 	Transform(f func(T) T)
 	// TransformOr works just like Transform, but maps None -> backup
@@ -42,8 +51,6 @@ type Optional[T comparable] interface {
 	// TransformOrError works just like Transform, but the transform function can return an error which is returned as-is
 	TransformOrError(f func(T) (T, error)) error
 	BinaryTransform(second T, f func(T, T) T)
-	// Satisfies encoding.json.Marshaler
-	MarshalJSON() ([]byte, error)
 	// Satisfies encoding.json.UnMarshaler
 	UnmarshalJSON([]byte) error
 }

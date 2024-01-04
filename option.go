@@ -62,6 +62,16 @@ func (o Option[T]) IsNone() bool {
 // is copied by value, it will still refer to the same value.
 func (o Option[T]) Clone() Optional[T] {
 	if o.none {
+		return None[T]()
+	} else {
+		return Some(o.inner)
+	}
+}
+
+// MutableClone creates a copy of the Option by value the same as Clone. The only differnce is that the returned type
+// is a pointer cast as a MutableOptional so that the returned value can be further modified.
+func (o Option[T]) MutableClone() MutableOptional[T] {
+	if o.none {
 		tmp := None[T]()
 		return &tmp
 	} else {
@@ -112,7 +122,7 @@ func (o *Option[T]) GetOrInsert(val T) T {
 }
 
 // Must is like Get, but panic instead of producing an error.
-func (o *Option[T]) Must() T {
+func (o Option[T]) Must() T {
 	res, err := o.Get()
 	if err != nil {
 		panic("Attempted to call Must on an Option with None value")

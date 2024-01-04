@@ -13,14 +13,30 @@ import (
 func TestOptionIsOptional(t *testing.T) {
 	// The real test is if we get compiler errors because &o does not implement Optional
 	o := optional.Some(42)
-	var op optional.Optional[int] = &o
+	var op optional.Optional[int] = o
+	assert.Assert(t, op.IsSome())
+}
+
+func TestOptionPointerIsMutableOptional(t *testing.T) {
+	// The real test is if we get compiler errors because &o does not implement Optional
+	o := optional.Some(42)
+	var op optional.MutableOptional[int] = &o
 	assert.Assert(t, op.IsSome())
 }
 
 func TestOptionalClone(t *testing.T) {
 	o := optional.Some(42)
-	var op optional.Optional[int] = &o
-	clone := op.Clone()
+	assert.Assert(t, o.IsSome())
+	clone := o.Clone()
+	o.Set(49)
+	assert.Assert(t, clone.IsSome())
+	assert.Equal(t, 42, clone.Must())
+}
+
+func TestMutableOptionalMutableClone(t *testing.T) {
+	o := optional.Some(42)
+	var op optional.MutableOptional[int] = &o
+	clone := op.MutableClone()
 	clone.Set(49)
 	assert.Assert(t, op.IsSome())
 	assert.Equal(t, 42, op.MustUnwrap())

@@ -25,7 +25,7 @@ type PrivateKeys interface {
 
 // ConfigOptional is an extension of the Optional interface meant to make it more useful for loading configurations.
 type ConfigOptional[T primatives] interface {
-	optional.Optional[T]
+	optional.MutableOptional[T]
 
 	// Satisfies fmt.Stringer interface
 	String() string
