@@ -1,0 +1,65 @@
+{
+  "lockfile_version": "1",
+  "packages": {
+    "glow@latest": {
+      "last_modified": "2023-11-17T14:14:56Z",
+      "resolved": "github:NixOS/nixpkgs/a71323f68d4377d12c04a5410e214495ec598d4c#glow",
+      "source": "devbox-search",
+      "version": "1.5.1",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/d219xblj96qalqq3rdcvqrrr39v2f40i-glow-1.5.1"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/ywp7sq92a3v5wrq7khn0a9vm8pbym2n5-glow-1.5.1"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/7djw4n6xpm5ixzf45n5x7r15k1dc1l8i-glow-1.5.1"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/lxj6va5k3gcmf4m4ad7hk7mnfks7vigh-glow-1.5.1"
+        }
+      }
+    },
+    "go_1_21@latest": {
+      "last_modified": "2023-09-27T18:02:17Z",
+      "resolved": "github:NixOS/nixpkgs/517501bcf14ae6ec47efd6a17dda0ca8e6d866f9#go_1_21",
+      "source": "devbox-search",
+      "version": "1.21.1",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/s1xk6hrfn0kw8ycvqbx4vv4gr00k6qpl-go-1.21.1"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/id3ygqxp1hvbh7dyjlwngx53fvcpqg84-go-1.21.1"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/yn0g820ayb963s0i4nnw9pf72l49kkg0-go-1.21.1"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/pvvv2lmx9m8b2n0447mljrl5xmla8r3h-go-1.21.1"
+        }
+      }
+    },
+    "gotools@latest": {
+      "last_modified": "2023-11-17T14:14:56Z",
+      "resolved": "github:NixOS/nixpkgs/a71323f68d4377d12c04a5410e214495ec598d4c#gotools",
+      "source": "devbox-search",
+      "version": "0.7.0",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/bmdv3y11inhn36scpf2b8k0vycafga7f-gotools-0.7.0"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/ng5x0ylvglivpcq6vqmncfm78xynn1d8-gotools-0.7.0"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/rsgdk2jb989h86y8rnc2qczc2y31xjgl-gotools-0.7.0"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/iizivm6g48688vc2ayc7v1bqh0lrp3jb-gotools-0.7.0"
+        }
+      }
+    }
+  }
+}
