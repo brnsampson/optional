@@ -144,21 +144,23 @@ best way usually requires at least flags, env vars, and some kind of config file
 
 Flags: Determines which entrypoint to use for code execution and also allows for a human override for any other configuration.
 Think about your favorite single-binary system like consul, k8s, etc. The flag is what determines if a given execution
-will run a server or worker node. It is very clunky to use anything else to do this.
+will run a dev server or production node. It is very clunky to use anything else to do this.
 
 Env vars: Where your code runs is important. What datacenter are you in? What region? Is this production or dev? You
 _could_ have some system merging the environment configuration with the application configuration, but why? I have
 seen more than enough puppet or chef configurations trying to handle application config to last a lifetime. But everyone
 uses orchestration systems like k8s now right? I'm tired of seeing a pod with a handful of side-cars that all have the same
-environment distilled into their own little files. Humans developed environment variables to solve a real problem!
+environment distilled into their own little files. Humans developed environment variables to solve a real problem, and
+they are really good at solving those problems!
 
 The wild west: Use YAML, TOML, JSON, BSON, JSON5, Consul, Vault, Zookeeper, etcd, whatever bad distributed key/value
 store your company implemented on top of redis, or even DynoDB if you are a psycopath. I'm not gunna sweat it, because
 if you use flags and env vars properly the only things that cares about this stuff is your application and I, as an
 infrastructure engineer, am never going to have to interact with this. As long as you don't break your own config then
-ask me to fix it.
+ask me to fix it. You can do that, I suppose, but know that some poor person that is taking time out of keeping that
+old elasticsearch cluster alive for one more day is judging you hard.
 
-Actually, on second thought just use TOML or whatever the company told you to use. You're probably just using this for
+Actually, on second thought just use TOML or whatever the company told you to use. You're probably just using it for
 boolean feature flags anyways.
 
 ## FAQ's
