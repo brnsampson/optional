@@ -85,10 +85,13 @@ func (o *Option[T]) Clear() {
 	o.none = true
 }
 
-// Set converts a Some(x) or None type Option into a Some(value) value
-func (o *Option[T]) Set(value T) {
+// Set converts a Some(x) or None type Option into a Some(value) value. For a standard Option, the returned error is
+// always nil and can safely be ignored, but this is important for compatability with other interfaces and allows
+// for more complex Optional types which might perform validation to embed this Option and just override Set()
+func (o *Option[T]) Set(value T) error {
 	o.inner = value
 	o.none = false
+	return nil
 }
 
 // Get returns the current wrapped value of a Some value Option and returns an error if the Option is None.
@@ -194,7 +197,7 @@ func (o Option[T]) Eq(other Optional[T]) bool {
 // And returns None if the Option is None, and other if the original Option is Some. Conceptually, think o && other
 func (o Option[T]) And(other Optional[T]) Optional[T] {
 	if o.none {
-		return &o
+		return o
 	} else {
 		return other
 	}
@@ -205,7 +208,7 @@ func (o Option[T]) Or(other Optional[T]) Optional[T] {
 	if o.none {
 		return other
 	} else {
-		return &o
+		return o
 	}
 }
 

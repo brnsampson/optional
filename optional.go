@@ -26,8 +26,6 @@ type Optional[T comparable] interface {
 	Must() T
 	Match(T) bool
 	Eq(Optional[T]) bool
-	And(Optional[T]) Optional[T]
-	Or(Optional[T]) Optional[T]
 	// Satisfies encoding.json.Marshaler
 	MarshalJSON() ([]byte, error)
 }
@@ -38,7 +36,7 @@ type MutableOptional[T comparable] interface {
 
 	MutableClone() MutableOptional[T]
 	Clear()
-	Set(T)
+	Set(T) error
 	GetOrInsert(T) T
 	Unwrap() (T, error)
 	MustUnwrap() T
@@ -53,4 +51,46 @@ type MutableOptional[T comparable] interface {
 	BinaryTransform(second T, f func(T, T) T)
 	// Satisfies encoding.json.UnMarshaler
 	UnmarshalJSON([]byte) error
+}
+
+// Equal is a convenience function for checking if the contents of two Optional types are equivilent.
+// Note that Get() and Match() may be overridden by more complex types which wrap a vanilla Option.
+// In these situations, the writer is responsible for making sure that the invariant Some(x).Match(Some(x).Get())
+// is always true.
+func Equal[T comparable, O Optional[T]](left, right O) bool {
+	if left.IsNone() && right.IsNone() {
+		return true
+	} else if left.IsSome() && right.IsSome() {
+		tmp, err := left.Get()
+		if err != nil {
+			return false
+		}
+
+		return right.Match(tmp)
+	} else {
+		// one is none and the other is some
+		return false
+	}
+}
+
+// And returns None if the first Optional is None, and the second Optional otherwise. Conceptually similar to
+// left && right. This is a convenience function for Option selection. Convenient for merging configs, implementing
+// builder patterns, etc.
+func And[T comparable, O Optional[T]](left, right O) O {
+	if left.IsNone() {
+		return left
+	} else {
+		return right
+	}
+}
+
+// Or returns the first Optional if it contains a value. Otherwise, return the second Optional. This is conceptually
+// similar to left || right. This is a convenience function for situations like merging configs or implementing
+// builder patterns.
+func Or[T comparable, O Optional[T]](left, right O) O {
+	if left.IsSome() {
+		return left
+	} else {
+		return right
+	}
 }

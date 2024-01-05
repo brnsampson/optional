@@ -10,13 +10,6 @@ import (
 	"testing"
 )
 
-func TestOptionIsOptional(t *testing.T) {
-	// The real test is if we get compiler errors because &o does not implement Optional
-	o := optional.Some(42)
-	var op optional.Optional[int] = o
-	assert.Assert(t, op.IsSome())
-}
-
 func TestOptionPointerIsMutableOptional(t *testing.T) {
 	// The real test is if we get compiler errors because &o does not implement Optional
 	o := optional.Some(42)

@@ -2,10 +2,28 @@ package config_test
 
 import (
 	"time"
+	"github.com/brnsampson/optional"
 	"github.com/brnsampson/optional/config"
 	"gotest.tools/v3/assert"
 	"testing"
 )
+
+func TestAnd(t *testing.T) {
+	S1 := config.NoStr()
+	S2 := config.SomeStr("Testing this thinger")
+	res := optional.And(&S1, &S2)
+
+	assert.Assert(t, res.IsNone())
+}
+
+func TestOr(t *testing.T) {
+	S1 := config.NoStr()
+	S2 := config.SomeStr("Testing this thinger")
+	res := optional.Or(&S1, &S2)
+
+	assert.Assert(t, res.IsSome())
+	assert.Equal(t, res.String(), "Testing this thinger")
+}
 
 func TestIntIsConfigOptional(t *testing.T) {
 	// The real test is if we get compiler errors because &I does not implement ConfigOptional

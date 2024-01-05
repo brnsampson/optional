@@ -121,6 +121,26 @@ func NoCert() Cert {
 	return Cert{optional.None[string]()}
 }
 
+// Overrides Option.Match to account for relative paths potentially being different strings but representing the same file.
+func (o Cert) Match(probe string) bool {
+	if o.IsNone() {
+		return false
+	} else {
+		path, err := o.Get()
+		if err != nil {
+			// How did we get here...
+			return false
+		}
+
+		abs, err := filepath.Abs(probe)
+		if err != nil {
+			// Invalid paths can never be equal!
+			return false
+		}
+		return path == abs
+	}
+}
+
 // Overrides Option.Get() to update the behavior of all Get* and Unwrap* functions in order to always return the absolute
 // path of the desired file.
 func (o Cert) Get() (string, error) {
@@ -237,6 +257,26 @@ func SomePubKey(path string) PubKey {
 
 func NoPubKey() PubKey {
 	return PubKey{optional.None[string]()}
+}
+
+// Overrides Option.Match to account for relative paths potentially being different strings but representing the same file.
+func (o PubKey) Match(probe string) bool {
+	if o.IsNone() {
+		return false
+	} else {
+		path, err := o.Get()
+		if err != nil {
+			// How did we get here...
+			return false
+		}
+
+		abs, err := filepath.Abs(probe)
+		if err != nil {
+			// Invalid paths can never be equal!
+			return false
+		}
+		return path == abs
+	}
 }
 
 // Overrides Option.Get() to update the behavior of all Get* and Unwrap* functions in order to always return the absolute
@@ -373,6 +413,26 @@ func SomePrivateKey(path string) PrivateKey {
 
 func NoPrivateKey() PrivateKey {
 	return PrivateKey{optional.None[string]()}
+}
+
+// Overrides Option.Match to account for relative paths potentially being different strings but representing the same file.
+func (o PrivateKey) Match(probe string) bool {
+	if o.IsNone() {
+		return false
+	} else {
+		path, err := o.Get()
+		if err != nil {
+			// How did we get here...
+			return false
+		}
+
+		abs, err := filepath.Abs(probe)
+		if err != nil {
+			// Invalid paths can never be equal!
+			return false
+		}
+		return path == abs
+	}
 }
 
 // Overrides Option.Get() to update the behavior of all Get* and Unwrap* functions in order to always return the absolute
