@@ -4,6 +4,7 @@ import (
 	"os"
 	"bytes"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"crypto"
 	"crypto/x509"
@@ -13,6 +14,11 @@ import (
 	"github.com/brnsampson/optional/config"
 	"gotest.tools/v3/assert"
 )
+
+func TestCertType(t *testing.T) {
+	o := config.SomeCert("/not/a/real/path")
+	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
+}
 
 func TestCertString(t *testing.T) {
 	path := "../tls/rsa/cert.pem"
@@ -176,6 +182,11 @@ func TestCertFileWriteCerts(t *testing.T) {
 	assert.Assert(t, len(certs) == 1)
 	assert.Assert(t, len(newCerts) == 1)
 	assert.Assert(t, certs[0].Equal(newCerts[0]))
+}
+
+func TestPubKeyType(t *testing.T) {
+	o := config.SomePubKey("/not/a/real/path")
+	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
 
 func TestPubKeyString(t *testing.T) {
@@ -364,6 +375,11 @@ func TestPubKeyWritePubKey(t *testing.T) {
 	default:
 		panic("Expected key loaded from tmp file to be *rsa.PublicKey, but it wasn't!")
 	}
+}
+
+func TestPrivateKeyType(t *testing.T) {
+	o := config.SomePrivateKey("/not/a/real/path")
+	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
 
 func TestPrivateKeyString(t *testing.T) {

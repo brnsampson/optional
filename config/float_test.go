@@ -1,11 +1,17 @@
 package config_test
 
 import (
+	"reflect"
 	"strconv"
 	"github.com/brnsampson/optional/config"
 	"gotest.tools/v3/assert"
 	"testing"
 )
+
+func TestFloat32Type(t *testing.T) {
+	o := config.SomeFloat32(42.0)
+	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
+}
 
 func TestFloat32String(t *testing.T) {
 	var f float32 = 42.1
@@ -48,6 +54,11 @@ func TestFloat32UnmarshalText(t *testing.T) {
 	// Test unmarshaling non-float
 	err = o.UnmarshalText([]byte(s))
 	assert.Assert(t, err != nil)
+}
+
+func TestFloat64Type(t *testing.T) {
+	o := config.SomeFloat64(42.0)
+	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
 
 func TestFloat64String(t *testing.T) {

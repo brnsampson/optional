@@ -45,6 +45,10 @@ func (o Time) Formats() []string {
 	return o.formats
 }
 
+func (o Time) Type() string {
+	return "Time"
+}
+
 func (o Time) String() string {
 	if o.IsNone() {
 		return "None[Time]"

@@ -15,6 +15,10 @@ func NoStr() Str {
 	return Str{optional.None[string]()}
 }
 
+func (o Str) Type() string {
+	return "Str"
+}
+
 func (o Str) String() string {
 	if o.IsNone() {
 		return "None[Str]"

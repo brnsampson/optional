@@ -18,6 +18,10 @@ func NoInt() Int {
 	return Int{optional.None[int]()}
 }
 
+func (o Int) Type() string {
+	return "Int"
+}
+
 func (o Int) String() string {
 	if o.IsNone() {
 		return "None[Int]"
@@ -64,6 +68,10 @@ func SomeInt8(value int8) Int8 {
 
 func NoInt8() Int8 {
 	return Int8{optional.None[int8]()}
+}
+
+func (o Int8) Type() string {
+	return "Int8"
 }
 
 func (o Int8) String() string {
@@ -114,6 +122,10 @@ func NoInt16() Int16 {
 	return Int16{optional.None[int16]()}
 }
 
+func (o Int16) Type() string {
+	return "Int16"
+}
+
 func (o Int16) String() string {
 	if o.IsNone() {
 		return "None[Int16]"
@@ -162,6 +174,10 @@ func NoInt32() Int32 {
 	return Int32{optional.None[int32]()}
 }
 
+func (o Int32) Type() string {
+	return "Int32"
+}
+
 func (o Int32) String() string {
 	if o.IsNone() {
 		return "None[Int32]"
@@ -208,6 +224,10 @@ func SomeInt64(value int64) Int64 {
 
 func NoInt64() Int64 {
 	return Int64{optional.None[int64]()}
+}
+
+func (o Int64) Type() string {
+	return "Int64"
 }
 
 func (o Int64) String() string {

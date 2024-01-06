@@ -1,10 +1,16 @@
 package config_test
 
 import (
+	"reflect"
 	"github.com/brnsampson/optional/config"
 	"gotest.tools/v3/assert"
 	"testing"
 )
+
+func TestBoolType(t *testing.T) {
+	o := config.SomeBool(true)
+	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
+}
 
 func TestBoolString(t *testing.T) {
 	trueString := "true"

@@ -157,6 +157,10 @@ func (o Cert) Get() (string, error) {
 	return abs, nil
 }
 
+func (o Cert) Type() string {
+	return "Cert"
+}
+
 func (o Cert) String() string {
 	if o.IsNone() {
 		return "None[Cert]"
@@ -293,6 +297,10 @@ func (o PubKey) Get() (string, error) {
 	}
 
 	return abs, nil
+}
+
+func (o PubKey) Type() string {
+	return "PubKey"
 }
 
 func (o PubKey) String() string {
@@ -449,6 +457,10 @@ func (o PrivateKey) Get() (string, error) {
 	}
 
 	return abs, nil
+}
+
+func (o PrivateKey) Type() string {
+	return "PrivateKey"
 }
 
 func (o PrivateKey) String() string {

@@ -1,11 +1,17 @@
 package config_test
 
 import (
+	"reflect"
 	"strconv"
 	"github.com/brnsampson/optional/config"
 	"gotest.tools/v3/assert"
 	"testing"
 )
+
+func TestIntType(t *testing.T) {
+	o := config.SomeInt(42)
+	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
+}
 
 func TestIntString(t *testing.T) {
 	var i int = 42
@@ -48,6 +54,11 @@ func TestIntUnmarshalText(t *testing.T) {
 	// Test unmarshaling non-int
 	err = o.UnmarshalText([]byte(s))
 	assert.Assert(t, err != nil)
+}
+
+func TestInt8Type(t *testing.T) {
+	o := config.SomeInt8(42)
+	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
 
 func TestInt8String(t *testing.T) {
@@ -93,6 +104,11 @@ func TestInt8UnmarshalText(t *testing.T) {
 	assert.Assert(t, err != nil)
 }
 
+func TestInt16Type(t *testing.T) {
+	o := config.SomeInt16(42)
+	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
+}
+
 func TestInt16String(t *testing.T) {
 	var i int16 = 42
 	iStr := strconv.FormatInt(int64(i), 10)
@@ -136,6 +152,11 @@ func TestInt16UnmarshalText(t *testing.T) {
 	assert.Assert(t, err != nil)
 }
 
+func TestInt32Type(t *testing.T) {
+	o := config.SomeInt32(42)
+	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
+}
+
 func TestInt32String(t *testing.T) {
 	var i int32 = 42
 	iStr := strconv.FormatInt(int64(i), 10)
@@ -177,6 +198,11 @@ func TestInt32UnmarshalText(t *testing.T) {
 	// Test unmarshaling non-int
 	err = o.UnmarshalText([]byte(s))
 	assert.Assert(t, err != nil)
+}
+
+func TestInt64Type(t *testing.T) {
+	o := config.SomeInt64(42)
+	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
 
 func TestInt64String(t *testing.T) {

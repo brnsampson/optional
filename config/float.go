@@ -18,6 +18,10 @@ func NoFloat32() Float32 {
 	return Float32{optional.None[float32]()}
 }
 
+func (o Float32) Type() string {
+	return "Float32"
+}
+
 func (o Float32) String() string {
 	if o.IsNone() {
 		return "None[Float32]"
@@ -64,6 +68,10 @@ func SomeFloat64(value float64) Float64 {
 
 func NoFloat64() Float64 {
 	return Float64{optional.None[float64]()}
+}
+
+func (o Float64) Type() string {
+	return "Float64"
 }
 
 func (o Float64) String() string {

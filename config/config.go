@@ -13,6 +13,8 @@ type primatives interface {
 type ConfigOptional[T primatives] interface {
 	optional.MutableOptional[T]
 
+	// Along with String() and Set(value) error from MutableOptional, implements pflag.Value
+	Type() string
 	// Satisfies fmt.Stringer interface
 	String() string
 	// Satisfies encoding.TextUnmarshaler

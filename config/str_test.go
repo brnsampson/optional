@@ -1,10 +1,16 @@
 package config_test
 
 import (
+	"reflect"
 	"github.com/brnsampson/optional/config"
 	"gotest.tools/v3/assert"
 	"testing"
 )
+
+func TestStrType(t *testing.T) {
+	o := config.SomeStr("A dumb test string")
+	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
+}
 
 func TestStrString(t *testing.T) {
 	str := "testing this tester with the testing module"

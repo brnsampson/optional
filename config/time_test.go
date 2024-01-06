@@ -3,11 +3,17 @@ package config_test
 import (
 	"time"
 	"slices"
+	"reflect"
 	"encoding/json"
 	"github.com/brnsampson/optional/config"
 	"gotest.tools/v3/assert"
 	"testing"
 )
+
+func TestTimeType(t *testing.T) {
+	o := config.SomeTime(time.Now())
+	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
+}
 
 func TestTimeString(t *testing.T) {
 	now := time.Now().Truncate(0)

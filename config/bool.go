@@ -17,6 +17,10 @@ func NoBool() Bool {
 	return Bool{optional.None[bool]()}
 }
 
+func (o Bool) Type() string {
+	return "Bool"
+}
+
 func (o Bool) String() string {
 	if o.IsNone() {
 		return "None[Bool]"
