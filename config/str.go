@@ -19,6 +19,10 @@ func (o Str) Type() string {
 	return "Str"
 }
 
+func (o *Str) Set(str string) error {
+	return o.UnmarshalText([]byte(str))
+}
+
 func (o Str) String() string {
 	if o.IsNone() {
 		return "None[Str]"
@@ -45,7 +49,7 @@ func (o *Str) UnmarshalText(text []byte) error {
 	if tmp == "None" || tmp == "none" || tmp == "null" || tmp == "nil" {
 		o.Clear()
 	} else {
-		o.Set(tmp)
+		o.SetVal(tmp)
 	}
 	return nil
 }

@@ -21,7 +21,7 @@ func TestOptionalClone(t *testing.T) {
 	o := optional.Some(42)
 	assert.Assert(t, o.IsSome())
 	clone := o.Clone()
-	o.Set(49)
+	o.SetVal(49)
 	assert.Assert(t, clone.IsSome())
 	assert.Equal(t, 42, clone.Must())
 }
@@ -30,13 +30,13 @@ func TestMutableOptionalMutableClone(t *testing.T) {
 	o := optional.Some(42)
 	var op optional.MutableOptional[int] = &o
 	clone := op.MutableClone()
-	clone.Set(49)
+	clone.SetVal(49)
 	assert.Assert(t, op.IsSome())
 	assert.Equal(t, 42, op.MustUnwrap())
 }
 
 func TestOptionBasics(t *testing.T) {
-	// Covers IsSome, IsNone, Clear, Set, and Get
+	// Covers IsSome, IsNone, Clear, SetVal, and Get
 	val := 42
 	val2 := 49
 	errString := "Attempted to Get Option with None value"
@@ -58,7 +58,7 @@ func TestOptionBasics(t *testing.T) {
 	tmp, err = o.Get()
 	assert.Error(t, err, errString)
 
-	o.Set(val2)
+	o.SetVal(val2)
 	assert.Assert(t, o.IsSome())
 	assert.Assert(t, !o.IsNone())
 
@@ -66,6 +66,8 @@ func TestOptionBasics(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, val2, tmp)
 }
+
+// Skipping ClearIfMatch since it is literally just calling two covered functions
 
 func TestOptionGetOr(t *testing.T) {
 	val := 42

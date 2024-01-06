@@ -1,4 +1,4 @@
-host = "not_the_default"
+host = "host.from.file"
 
 [nested]
 #port = 3000

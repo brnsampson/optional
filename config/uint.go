@@ -22,6 +22,10 @@ func (o Uint) Type() string {
 	return "Uint"
 }
 
+func (o *Uint) Set(str string) error {
+	return o.UnmarshalText([]byte(str))
+}
+
 func (o Uint) String() string {
 	if o.IsNone() {
 		return "None[Uint]"
@@ -52,7 +56,7 @@ func (o *Uint) UnmarshalText(text []byte) error {
 		if err != nil {
 			return err
 		}
-		o.Set(uint(i))
+		o.SetVal(uint(i))
 	}
 	return nil
 }
@@ -72,6 +76,10 @@ func NoUint8() Uint8 {
 
 func (o Uint8) Type() string {
 	return "Uint8"
+}
+
+func (o *Uint8) Set(str string) error {
+	return o.UnmarshalText([]byte(str))
 }
 
 func (o Uint8) String() string {
@@ -104,7 +112,7 @@ func (o *Uint8) UnmarshalText(text []byte) error {
 		if err != nil {
 			return err
 		}
-		o.Set(uint8(i))
+		o.SetVal(uint8(i))
 	}
 	return nil
 }
@@ -124,6 +132,10 @@ func NoUint16() Uint16 {
 
 func (o Uint16) Type() string {
 	return "Uint16"
+}
+
+func (o *Uint16) Set(str string) error {
+	return o.UnmarshalText([]byte(str))
 }
 
 func (o Uint16) String() string {
@@ -156,7 +168,7 @@ func (o *Uint16) UnmarshalText(text []byte) error {
 		if err != nil {
 			return err
 		}
-		o.Set(uint16(i))
+		o.SetVal(uint16(i))
 	}
 	return nil
 }
@@ -176,6 +188,10 @@ func NoUint32() Uint32 {
 
 func (o Uint32) Type() string {
 	return "Uint32"
+}
+
+func (o *Uint32) Set(str string) error {
+	return o.UnmarshalText([]byte(str))
 }
 
 func (o Uint32) String() string {
@@ -208,7 +224,7 @@ func (o *Uint32) UnmarshalText(text []byte) error {
 		if err != nil {
 			return err
 		}
-		o.Set(uint32(i))
+		o.SetVal(uint32(i))
 	}
 	return nil
 }
@@ -228,6 +244,10 @@ func NoUint64() Uint64 {
 
 func (o Uint64) Type() string {
 	return "Uint64"
+}
+
+func (o *Uint64) Set(str string) error {
+	return o.UnmarshalText([]byte(str))
 }
 
 func (o Uint64) String() string {
@@ -260,7 +280,7 @@ func (o *Uint64) UnmarshalText(text []byte) error {
 		if err != nil {
 			return err
 		}
-		o.Set(i)
+		o.SetVal(i)
 	}
 	return nil
 }

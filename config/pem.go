@@ -161,6 +161,10 @@ func (o Cert) Type() string {
 	return "Cert"
 }
 
+func (o *Cert) Set(str string) error {
+	return o.UnmarshalText([]byte(str))
+}
+
 func (o Cert) String() string {
 	if o.IsNone() {
 		return "None[Cert]"
@@ -187,7 +191,7 @@ func (o *Cert) UnmarshalText(text []byte) error {
 	if tmp == "None" || tmp == "none" || tmp == "null" || tmp == "nil" {
 		o.Clear()
 	} else {
-		o.Set(tmp)
+		o.SetVal(tmp)
 	}
 
 	return nil
@@ -303,6 +307,10 @@ func (o PubKey) Type() string {
 	return "PubKey"
 }
 
+func (o *PubKey) Set(str string) error {
+	return o.UnmarshalText([]byte(str))
+}
+
 func (o PubKey) String() string {
 	if o.IsNone() {
 		return "None[PubKey]"
@@ -329,7 +337,7 @@ func (o *PubKey) UnmarshalText(text []byte) error {
 	if tmp == "None" || tmp == "none" || tmp == "null" || tmp == "nil" {
 		o.Clear()
 	} else {
-		o.Set(tmp)
+		o.SetVal(tmp)
 	}
 
 	return nil
@@ -463,6 +471,10 @@ func (o PrivateKey) Type() string {
 	return "PrivateKey"
 }
 
+func (o *PrivateKey) Set(str string) error {
+	return o.UnmarshalText([]byte(str))
+}
+
 func (o PrivateKey) String() string {
 	if o.IsNone() {
 		return "None[PrivateKey]"
@@ -489,7 +501,7 @@ func (o *PrivateKey) UnmarshalText(text []byte) error {
 	if tmp == "None" || tmp == "none" || tmp == "null" || tmp == "nil" {
 		o.Clear()
 	} else {
-		o.Set(tmp)
+		o.SetVal(tmp)
 	}
 
 	return nil

@@ -21,6 +21,10 @@ func (o Bool) Type() string {
 	return "Bool"
 }
 
+func (o *Bool) Set(str string) error {
+	return o.UnmarshalText([]byte(str))
+}
+
 func (o Bool) String() string {
 	if o.IsNone() {
 		return "None[Bool]"
@@ -51,7 +55,7 @@ func (o *Bool) UnmarshalText(text []byte) error {
 		if err != nil {
 			return err
 		}
-		o.Set(i)
+		o.SetVal(i)
 	}
 	return nil
 }

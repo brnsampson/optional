@@ -85,13 +85,23 @@ func (o *Option[T]) Clear() {
 	o.none = true
 }
 
-// Set converts a Some(x) or None type Option into a Some(value) value. For a standard Option, the returned error is
-// always nil and can safely be ignored, but this is important for compatability with other interfaces and allows
-// for more complex Optional types which might perform validation to embed this Option and just override Set()
-func (o *Option[T]) Set(value T) error {
+// ClearIfMatch calls clear if Option.Match(probe) == true. This is a convenience for situations where you need to convert
+// from a value of T with known "magic value" which implies None. A good example of this is if you have an int loaded
+// from command line flags and you know that any flag omitted by the user will be assigned to 0. This can be done like this:
+// o := Some(x)
+// o.ClearIfMatch(0)
+func (o *Option[T]) ClearIfMatch(probe T) {
+	if o.Match(probe) {
+		o.Clear()
+	}
+}
+
+// SetVal converts a Some(x) or None type Option into a Some(value) value.
+// For more complex Optional types which might perform validation, this Option can be embedded and you can just
+// override SetVal()
+func (o *Option[T]) SetVal(value T) {
 	o.inner = value
 	o.none = false
-	return nil
 }
 
 // Get returns the current wrapped value of a Some value Option and returns an error if the Option is None.
@@ -112,12 +122,12 @@ func (o Option[T]) GetOr(val T) T {
 	}
 }
 
-// GetOrInsert is the same as Get, but will call Set on the passed value first if the Option is None
+// GetOrInsert is the same as Get, but will call SetVal on the passed value first if the Option is None
 func (o *Option[T]) GetOrInsert(val T) T {
 	res, err := o.Get()
 
 	if err != nil {
-		o.Set(val)
+		o.SetVal(val)
 		return val
 	} else {
 		return res
@@ -217,7 +227,7 @@ func (o Option[T]) Or(other Optional[T]) Optional[T] {
 func (o *Option[T]) Transform(f func(inner T) T) {
 	if o.IsSome() {
 		tmp := f(o.inner)
-		o.Set(tmp)
+		o.SetVal(tmp)
 	}
 }
 
@@ -225,9 +235,9 @@ func (o *Option[T]) Transform(f func(inner T) T) {
 func (o *Option[T]) TransformOr(f func(T) T, backup T) {
 	if o.IsSome() {
 		tmp := f(o.inner)
-		o.Set(tmp)
+		o.SetVal(tmp)
 	} else {
-		o.Set(backup)
+		o.SetVal(backup)
 	}
 }
 
@@ -239,7 +249,7 @@ func (o *Option[T]) TransformOrError(f func(T) (T, error)) error {
 			return err
 		}
 
-		o.Set(tmp)
+		o.SetVal(tmp)
 	}
 	return nil
 }
@@ -248,7 +258,7 @@ func (o *Option[T]) TransformOrError(f func(T) (T, error)) error {
 func (o *Option[T]) BinaryTransform(second T, f func(T, T) T) {
 	if o.IsSome() {
 		tmp := f(o.inner, second)
-		o.Set(tmp)
+		o.SetVal(tmp)
 	}
 }
 
@@ -280,7 +290,7 @@ func (o *Option[T]) UnmarshalJSON(data []byte) error {
 	if tmp2 != nil {
 		// According to the spec, this should be nil if we recieved a json null, but I've found that you
 		// actually will get a valid pointer going to the zero value.
-		o.Set(*tmp2)
+		o.SetVal(*tmp2)
 	} else {
 		o.Clear()
 	}

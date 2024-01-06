@@ -36,7 +36,8 @@ type MutableOptional[T comparable] interface {
 
 	MutableClone() MutableOptional[T]
 	Clear()
-	Set(T) error
+	ClearIfMatch(T)
+	SetVal(T)
 	GetOrInsert(T) T
 	Unwrap() (T, error)
 	MustUnwrap() T

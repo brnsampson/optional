@@ -49,6 +49,10 @@ func (o Time) Type() string {
 	return "Time"
 }
 
+func (o *Time) Set(str string) error {
+	return o.UnmarshalText([]byte(str))
+}
+
 func (o Time) String() string {
 	if o.IsNone() {
 		return "None[Time]"
@@ -85,7 +89,7 @@ func (o *Time) UnmarshalText(text []byte) error {
 		for i, f := range o.formats {
 			t, err := time.Parse(f, tmp)
 			if err == nil {
-				o.Set(t)
+				o.SetVal(t)
 				break
 			}
 			if i == l-1 {

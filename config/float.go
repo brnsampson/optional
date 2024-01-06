@@ -22,6 +22,10 @@ func (o Float32) Type() string {
 	return "Float32"
 }
 
+func (o *Float32) Set(str string) error {
+	return o.UnmarshalText([]byte(str))
+}
+
 func (o Float32) String() string {
 	if o.IsNone() {
 		return "None[Float32]"
@@ -52,7 +56,7 @@ func (o *Float32) UnmarshalText(text []byte) error {
 		if err != nil {
 			return err
 		}
-		o.Set(float32(i))
+		o.SetVal(float32(i))
 	}
 	return nil
 }
@@ -72,6 +76,10 @@ func NoFloat64() Float64 {
 
 func (o Float64) Type() string {
 	return "Float64"
+}
+
+func (o *Float64) Set(str string) error {
+	return o.UnmarshalText([]byte(str))
 }
 
 func (o Float64) String() string {
@@ -104,7 +112,7 @@ func (o *Float64) UnmarshalText(text []byte) error {
 		if err != nil {
 			return err
 		}
-		o.Set(i)
+		o.SetVal(i)
 	}
 	return nil
 }
