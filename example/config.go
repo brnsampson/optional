@@ -1,18 +1,18 @@
 package main
 
 import (
+	"github.com/BurntSushi/toml"
+	"github.com/brnsampson/optional"
+	"github.com/brnsampson/optional/config"
+	"github.com/caarlos0/env"
+	"github.com/charmbracelet/log"
 	"os"
 	"path/filepath"
-	"github.com/caarlos0/env"
-    "github.com/BurntSushi/toml"
-    "github.com/charmbracelet/log"
-    "github.com/brnsampson/optional"
-    "github.com/brnsampson/optional/config"
 )
 
 const (
 	DEFAULT_HOST string = "localhost"
-	DEFAULT_PORT int = 1443
+	DEFAULT_PORT int    = 1443
 )
 
 type SubConfigLoader struct {
@@ -20,8 +20,9 @@ type SubConfigLoader struct {
 }
 
 type ConfigLoader struct {
-	Host config.Str `env:"HOST"`
-	Nested SubConfigLoader
+	ConfigPath config.Str `env:"CONFIG_FILE"`
+	Host       config.Str `env:"HOST"`
+	Nested     SubConfigLoader
 }
 
 type SubConfig struct {
@@ -29,12 +30,12 @@ type SubConfig struct {
 }
 
 type Config struct {
-    Host string
+	Host   string
 	Nested *SubConfig
 }
 
 func NewSubConfigLoader() SubConfigLoader {
-	return SubConfigLoader{ config.NoInt() }
+	return SubConfigLoader{config.NoInt()}
 }
 
 func SubConfigLoaderFromEnv() (loader SubConfigLoader, err error) {
@@ -54,7 +55,7 @@ func (l SubConfigLoader) WithPort(port config.Int) SubConfigLoader {
 	return l
 }
 
-func (l SubConfigLoader) OrPort(port config.Int)  SubConfigLoader {
+func (l SubConfigLoader) OrPort(port config.Int) SubConfigLoader {
 	l.Port = optional.Or(l.Port, port)
 	return l
 }
@@ -64,15 +65,25 @@ func (l SubConfigLoader) Merged(other SubConfigLoader) SubConfigLoader {
 }
 
 func (l SubConfigLoader) Finalize() (*SubConfig, error) {
-    port := l.Port.UnwrapOr(DEFAULT_PORT)
+	port := l.Port.UnwrapOr(DEFAULT_PORT)
 	config := SubConfig{port}
 	log.Info("Finalized subconfig", "config", config)
-    return &config, nil
+	return &config, nil
+}
+
+func (l *SubConfigLoader) Reload(init SubConfigLoader) error {
+	env, err := SubConfigLoaderFromEnv()
+	if err != nil {
+		return err
+	}
+
+	*l = init.Merged(env)
+	return nil
 }
 
 // Now for the main config loader
 func NewConfigLoader() ConfigLoader {
-    return ConfigLoader{ config.NoStr(), NewSubConfigLoader() }
+	return ConfigLoader{config.NoStr(), config.NoStr(), NewSubConfigLoader()}
 }
 
 func ConfigLoaderFromEnv() (loader ConfigLoader, err error) {
@@ -117,10 +128,12 @@ func ConfigLoaderFromFile(pathOpt config.Str) (loader ConfigLoader, err error) {
 		return
 	}
 
-    _, err = toml.DecodeFile(abs, &loader)
-    if err != nil {
+	_, err = toml.DecodeFile(abs, &loader)
+	if err != nil {
 		return
-    }
+	}
+
+	loader = loader.WithConfigPath(config.SomeStr(abs))
 
 	log.Debug("Loaded server config from file", "filename", abs, "config", loader)
 
@@ -129,20 +142,30 @@ func ConfigLoaderFromFile(pathOpt config.Str) (loader ConfigLoader, err error) {
 
 func LoadedConfigLoader(path config.Str, override ConfigLoader) (loader ConfigLoader, err error) {
 	loader = override
-    file, err := ConfigLoaderFromFile(path)
+	file, err := ConfigLoaderFromFile(path)
 	if err != nil {
 		return
-    }
+	}
 	loader = loader.Merged(file)
 
-    env, err := ConfigLoaderFromEnv()
+	env, err := ConfigLoaderFromEnv()
 	if err != nil {
 		return
-    }
+	}
 	loader = loader.Merged(env)
 	log.Info("Loaded server config from all sources", "filename", path, "config", loader)
 
 	return
+}
+
+func (l ConfigLoader) WithConfigPath(path config.Str) ConfigLoader {
+	l.ConfigPath = optional.Or(path, l.ConfigPath)
+	return l
+}
+
+func (l ConfigLoader) OrConfigPath(path config.Str) ConfigLoader {
+	l.ConfigPath = optional.Or(l.ConfigPath, path)
+	return l
 }
 
 func (l ConfigLoader) WithHost(host config.Str) ConfigLoader {
@@ -161,12 +184,12 @@ func (l ConfigLoader) WithNested(nested SubConfigLoader) ConfigLoader {
 }
 
 func (l ConfigLoader) Merged(other ConfigLoader) ConfigLoader {
-	return l.OrHost(other.Host).WithNested(l.Nested.Merged(other.Nested))
+	return l.OrConfigPath(other.ConfigPath).OrHost(other.Host).WithNested(l.Nested.Merged(other.Nested))
 }
 
-func (c ConfigLoader) Finalize() (*Config, error) {
-    host := c.Host.UnwrapOr(DEFAULT_HOST)
-	nested, err := c.Nested.Finalize()
+func (l ConfigLoader) Finalize() (*Config, error) {
+	host := l.Host.UnwrapOr(DEFAULT_HOST)
+	nested, err := l.Nested.Finalize()
 	if err != nil {
 		log.Error("Failed to finalize config from config loader!")
 		return nil, err
@@ -174,5 +197,15 @@ func (c ConfigLoader) Finalize() (*Config, error) {
 
 	config := Config{host, nested}
 	log.Info("Finalized server config", "config", config)
-    return &config, nil
+	return &config, nil
+}
+
+func (l *ConfigLoader) Reload(init ConfigLoader) error {
+	newConfig, err := LoadedConfigLoader(l.ConfigPath, init)
+	if err != nil {
+		return err
+	}
+
+	*l = newConfig
+	return nil
 }

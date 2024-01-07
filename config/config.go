@@ -1,8 +1,8 @@
 package config
 
 import (
-	"time"
 	"github.com/brnsampson/optional"
+	"time"
 )
 
 type primatives interface {

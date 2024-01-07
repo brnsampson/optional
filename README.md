@@ -37,22 +37,22 @@ package for longer than it took to write the package.
 ## How?
 
 See the example/ directory for a setup for brain-dead config parsing. Sure, it's verbose for two real parameters and there
-are is a lot of boilderplate for what it does, but nothing is going to go wrong and it won't get more complicated as
-you add more configuration. More to the point, this does everything I really want from configuration without needing any
-complicated additional libraries involved. Don't get me wrong, Cobra and Viper are super powerful and well maintained,
-but 99% of the time I have only one command per executable and every time I touch Cobra or Viper I spend at least half
-an hour reading through documentation. Why bother for the vast majority of my work what just involves
-[stupid things](https://github.com/brnsampson/go-partyparrot) like a slack-bot to render text as
-[party parrots](https://cultofthepartyparrot.com/)?
+are is a lot of boilderplate for what it does, but nothing is going to go wrong and it is fully extendable to a real
+world project without needing any complicated additional libraries involved. Don't get me wrong, Cobra and Viper are
+super powerful and well maintained, but 98% of the time I only really want one command per executable and every time I
+touch Cobra or Viper I spend at least half an hour reading through documentation. Why bother for the vast majority of my
+work what just involves [stupid things](https://github.com/brnsampson/go-partyparrot) like a slack-bot to render text
+as [party parrots](https://cultofthepartyparrot.com/)?
 
-Note that while this looks like a lot of code, it does have a good set of functionality for a small project
+Note that while this looks like a lot of code for what it does, it does have a good set of functionality for a small project:
  * Clear precedence of config sources
  * Only basic `flag` library used
  * Flag for debug output
  * Flag to choose config file (including option to skip file loading without needing a separate flag!)
- * Keys for env var mapping and file parsing into config defined by the loader struct itself
+ * Annotations for env var mapping and file loading of the config are defined by the loader struct itself
  * Default values kept directly above config loader structs for easy comparison
  * No super ugly long parameter sets to pass from flag parsing to initialize structs (builder pattern preferred)
+ * Reloadable, so if you create an init ConfigLoader from flags you can then do hot reloads in response to e.g. a SIGHUP (see example/main.go)
  * No magic hidden in a library you need to look up
 
 If you want to try it, it was written so that the precedence is flags > file > env. The default values in the code are
@@ -62,11 +62,11 @@ Try running it a few different ways and seeing what happens!
 ```bash
 go run ./example
 PORT=3000 go run ./example
-PORT=3000 go run ./example --port 4000
-PORT=3000 go run ./example --port 4000 --host "example.com"
+PORT=3000 go run ./example --port 5000
+PORT=3000 go run ./example --port 5000 --host "example.com"
 PORT=3000 HOST=host.from.env go run ./example
 PORT=3000 HOST=host.from.env go run ./example --config alt.toml
-PORT=3000 HOST=host.from.env go run ./example --config none
+HOST=host.from.env go run ./example --config none
 PORT=3000 HOST=host.from.env go run ./example --config alt.toml --port 5000 --host host.from.flag
 PORT=3000 HOST=host.from.env go run ./example --config alt.toml --port 5000 --host host.from.flag
 PORT=3000 HOST=host.from.env go run ./example --debug --config alt.toml --port 5000 --host host.from.flag

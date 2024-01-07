@@ -1,9 +1,9 @@
 package config
 
 import (
-	"time"
 	"encoding/json"
 	"github.com/brnsampson/optional"
+	"time"
 )
 
 const DEFAULT_TIME_FORMAT string = time.RFC3339

@@ -3,10 +3,10 @@ package optional_test
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
-	"slices"
 	"github.com/brnsampson/optional"
 	"gotest.tools/v3/assert"
+	"slices"
+	"strconv"
 	"testing"
 )
 
@@ -576,10 +576,10 @@ func TestOptionUnMarshalJSON(t *testing.T) {
 	}
 
 	type S struct {
-		Animal optional.Option[string]
+		Animal  optional.Option[string]
 		Mineral optional.Option[string]
-		Man optional.Option[string]
-		Other Inner
+		Man     optional.Option[string]
+		Other   Inner
 	}
 
 	str := []byte(`"test1"`)
@@ -598,7 +598,7 @@ func TestOptionUnMarshalJSON(t *testing.T) {
 	assert.Assert(t, p.Eq(&expectedNone))
 
 	rawJSON := []byte(`{"animal": "monkey", "mineral": null, "man": "Lincon", "other": { "number": 42 }}`)
-	expected := S{ optional.Some("monkey"), optional.None[string](), optional.Some("Lincon"), Inner { optional.Some(42) } }
+	expected := S{optional.Some("monkey"), optional.None[string](), optional.Some("Lincon"), Inner{optional.Some(42)}}
 
 	s := S{}
 	err = json.Unmarshal(rawJSON, &s)

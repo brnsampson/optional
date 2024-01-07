@@ -1,9 +1,9 @@
 package config_test
 
 import (
-	"reflect"
 	"github.com/brnsampson/optional/config"
 	"gotest.tools/v3/assert"
+	"reflect"
 	"testing"
 )
 

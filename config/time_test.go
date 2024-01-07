@@ -1,13 +1,13 @@
 package config_test
 
 import (
-	"time"
-	"slices"
-	"reflect"
 	"encoding/json"
 	"github.com/brnsampson/optional/config"
 	"gotest.tools/v3/assert"
+	"reflect"
+	"slices"
 	"testing"
+	"time"
 )
 
 func TestTimeType(t *testing.T) {
@@ -84,7 +84,6 @@ func TestTimeUnmarshalJson(t *testing.T) {
 	//later := now.Add(wait)
 	nowUnixString := now.Format(time.UnixDate)
 	nowUnixJson := "\"" + nowUnixString + "\""
-
 
 	// Text null case
 	var n config.Time

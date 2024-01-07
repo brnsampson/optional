@@ -1,11 +1,11 @@
 package config_test
 
 import (
-	"time"
 	"github.com/brnsampson/optional"
 	"github.com/brnsampson/optional/config"
 	"gotest.tools/v3/assert"
 	"testing"
+	"time"
 )
 
 func TestAnd(t *testing.T) {

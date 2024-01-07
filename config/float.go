@@ -1,8 +1,8 @@
 package config
 
 import (
-	"strconv"
 	"github.com/brnsampson/optional"
+	"strconv"
 )
 
 // 32bit sized floats

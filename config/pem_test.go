@@ -1,18 +1,18 @@
 package config_test
 
 import (
-	"os"
 	"bytes"
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/rsa"
+	"crypto/x509"
+	"github.com/brnsampson/optional/config"
+	"gotest.tools/v3/assert"
+	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
-	"crypto"
-	"crypto/x509"
-	"crypto/rsa"
-	"crypto/ecdsa"
-	"crypto/ed25519"
-	"github.com/brnsampson/optional/config"
-	"gotest.tools/v3/assert"
 )
 
 func TestCertType(t *testing.T) {
@@ -53,7 +53,6 @@ func TestCertUnmarshalText(t *testing.T) {
 	intAbs, err := filepath.Abs(intCert)
 	// an error here doesn't mean our library is broken, just that the path we chose to test with isn't valid.
 	assert.NilError(t, err)
-
 
 	// Text sucessful unmarshaling
 	o := config.NoCert()
@@ -222,7 +221,6 @@ func TestPubKeyUnmarshalText(t *testing.T) {
 	intAbs, err := filepath.Abs(intPubKey)
 	// an error here doesn't mean our library is broken, just that the path we chose to test with isn't valid.
 	assert.NilError(t, err)
-
 
 	// Text sucessful unmarshaling
 	o := config.NoPubKey()
@@ -416,7 +414,6 @@ func TestPrivateKeyUnmarshalText(t *testing.T) {
 	// an error here doesn't mean our library is broken, just that the path we chose to test with isn't valid.
 	assert.NilError(t, err)
 
-
 	// Text sucessful unmarshaling
 	o := config.NoPrivateKey()
 	err = o.UnmarshalText([]byte(path))
@@ -492,7 +489,7 @@ func TestPrivateKeyReadCert(t *testing.T) {
 	// Check that the private key loaded correctly
 	type privKeyInter interface {
 		Public() crypto.PublicKey
-    	Equal(x crypto.PrivateKey) bool
+		Equal(x crypto.PrivateKey) bool
 	}
 
 	switch k1 := key.(type) {

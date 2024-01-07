@@ -1,10 +1,10 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/brnsampson/optional/config"
-    "github.com/charmbracelet/log"
-	"flag"
+	"github.com/charmbracelet/log"
 )
 
 const (
@@ -19,11 +19,11 @@ func main() {
 	confPath := config.SomeStr(DEFAULT_FLAG_CONFIG)
 	host := config.NoStr()
 	port := config.NoInt()
-	flag.BoolVar(&debug, "debug", false,"set logging level to debug")
+	flag.BoolVar(&debug, "debug", false, "set logging level to debug")
 	flag.Var(&confPath, "config", "path to config file. Set to `none` to disable loading from config.")
 	flag.Var(&host, "host", "hostname for a server or whatever")
 	flag.Var(&port, "port", "port for a server or whatever")
-    flag.Parse()
+	flag.Parse()
 
 	if debug {
 		log.SetLevel(log.DebugLevel)
@@ -35,23 +35,28 @@ func main() {
 	log.Debug("Loaded sub config loader from flags", "config", sl)
 	log.Debug("Loaded config loader from flags", "config", flagConf)
 
-    loader, err := LoadedConfigLoader(confPath, flagConf)
-    if err != nil {
-		fmt.Println(err)
-        panic("Error while loading config!")
-    }
+	// You COULD just do this... but I want to show how something would reload the config at runtime if you were listening
+	// to a SIGINT, for example
+	//loader, err := LoadedConfigLoader(confPath, flagConf)
+	//if err != nil {
+	//	fmt.Println(err)
+	//    panic("Error while loading config!")
+	//}
 
-    conf, err := loader.Finalize()
-    if err != nil {
-		fmt.Println(err)
-        panic("Error while finalizing config!")
-    }
+	loader := NewConfigLoader().WithConfigPath(confPath)
+	loader.Reload(flagConf)
 
-    // We have a static config! Easy, right?!?! ...right?
+	conf, err := loader.Finalize()
+	if err != nil {
+		fmt.Println(err)
+		panic("Error while finalizing config!")
+	}
+
+	// We have a static config! Easy, right?!?! ...right?
 	fmt.Println("")
 	fmt.Println("I loaded a config and my name is:")
-    fmt.Println(conf.Host)
+	fmt.Println(conf.Host)
 	fmt.Println("")
 	fmt.Println("And my port is:")
-    fmt.Println(conf.Nested.Port)
+	fmt.Println(conf.Nested.Port)
 }

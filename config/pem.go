@@ -1,15 +1,15 @@
 package config
 
 import (
-	"os"
-	"io"
-	"io/fs"
-	"fmt"
-	"path/filepath"
-	"encoding/pem"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
+	"fmt"
 	"github.com/brnsampson/optional"
+	"io"
+	"io/fs"
+	"os"
+	"path/filepath"
 )
 
 // Verifying and setting file permissions for public/private keys and certificates use the following file mode masks.
@@ -17,8 +17,8 @@ import (
 // be 0. The mask is only needed because _technically_ I suppose you could make a public key mode 600 or something if you
 // really wanted.
 const (
-	KeyFilePerms		fs.FileMode = 0600
-	PubKeyFilePerms		fs.FileMode = 0644
+	KeyFilePerms        fs.FileMode = 0600
+	PubKeyFilePerms     fs.FileMode = 0644
 	KeyFilePermsMask    fs.FileMode = 0177
 	PubKeyFilePermsMask fs.FileMode = 0133
 )
@@ -247,7 +247,7 @@ func (o Cert) WriteCerts(certs []*x509.Certificate) error {
 
 	blocks := make([]*pem.Block, 0)
 	for _, cert := range certs {
-		blocks = append(blocks, &pem.Block{ Type: "CERTIFICATE", Bytes: cert.Raw })
+		blocks = append(blocks, &pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw})
 	}
 
 	return writeBlocks(path, PubKeyFilePerms, PubKeyFilePermsMask, blocks)
@@ -410,7 +410,7 @@ func (o PubKey) WritePublicKeys(pubs []any) error {
 		if err != nil {
 			return err
 		}
-		block := pem.Block{ Type: "PUBLIC KEY", Bytes: der }
+		block := pem.Block{Type: "PUBLIC KEY", Bytes: der}
 		blocks = append(blocks, &block)
 	}
 
@@ -599,7 +599,7 @@ func (o PrivateKey) WritePrivateKey(key any) error {
 		return err
 	}
 
-	block := pem.Block{ Type: "PRIVATE KEY", Bytes: der }
+	block := pem.Block{Type: "PRIVATE KEY", Bytes: der}
 	blocks := []*pem.Block{&block}
 
 	return writeBlocks(path, KeyFilePerms, KeyFilePermsMask, blocks)

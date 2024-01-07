@@ -1,10 +1,10 @@
 package config_test
 
 import (
-	"reflect"
-	"strconv"
 	"github.com/brnsampson/optional/config"
 	"gotest.tools/v3/assert"
+	"reflect"
+	"strconv"
 	"testing"
 )
 
