@@ -12,20 +12,18 @@ func (e OptionalError) Error() string {
 	return e.msg
 }
 
+type Transformer[T comparable] func(T) (T, error)
+
 // Optional defines the functionality needed to provide good ergonimics around optional fields and values. In general,
 // code should not declare variables or parameters as Optionals and instead prefer using concrete types like Option.
 // This interface is meant to ensure compatablility between different concrete option types and for the rare cases where
 // the abstraction is actually necessary.
 type Optional[T comparable] interface {
 	IsSome() bool
-	IsSomeAnd(func(T) bool) bool
 	IsNone() bool
 	Clone() Optional[T]
 	Get() (T, error)
-	GetOr(T) T
-	Must() T
 	Match(T) bool
-	Eq(Optional[T]) bool
 	// Satisfies encoding.json.Marshaler
 	MarshalJSON() ([]byte, error)
 }
@@ -36,22 +34,21 @@ type MutableOptional[T comparable] interface {
 
 	MutableClone() MutableOptional[T]
 	Clear()
-	ClearIfMatch(T)
-	SetVal(T)
-	GetOrInsert(T) T
-	Unwrap() (T, error)
-	MustUnwrap() T
-	UnwrapOr(T) T
-	UnwrapOrElse(func() T) T
+	Replace(T) (Optional[T], error)
 	// Transform only applies the func to the values of Some valued Optionals. Any mapping of None is None.
-	Transform(f func(T) T)
-	// TransformOr works just like Transform, but maps None -> backup
-	TransformOr(f func(T) T, backup T)
-	// TransformOrError works just like Transform, but the transform function can return an error which is returned as-is
-	TransformOrError(f func(T) (T, error)) error
-	BinaryTransform(second T, f func(T, T) T)
+	Transform(f Transformer[T]) error
 	// Satisfies encoding.json.UnMarshaler
 	UnmarshalJSON([]byte) error
+}
+
+// IsSomeAnd returns true if the Option has a value of Some(x) and f(x) == true
+func IsSomeAnd[T comparable](opt Option[T], f func(T) bool) bool {
+	tmp, err := opt.Get()
+	if err != nil {
+		return false
+	} else {
+		return f(tmp)
+	}
 }
 
 // Equal is a convenience function for checking if the contents of two Optional types are equivilent.
@@ -94,4 +91,71 @@ func Or[T comparable, O Optional[T]](left, right O) O {
 	} else {
 		return right
 	}
+}
+
+// ClearIfMatch calls clear if Optional.Match(probe) == true. This is a convenience for situations where you need to convert
+// from a value of T with known "magic value" which implies None. A good example of this is if you have an int loaded
+// from command line flags and you know that any flag omitted by the user will be assigned to 0. This can be done like this:
+// o := Some(x)
+// o.ClearIfMatch(0)
+func ClearIfMatch[T comparable](opt MutableOptional[T], probe T) {
+	if opt.Match(probe) {
+		opt.Clear()
+	}
+}
+
+// Must just calls Get, but panic instead of producing an error.
+func Must[T comparable](opt Optional[T]) T {
+	res, err := opt.Get()
+	if err != nil {
+		panic("Attempted to call Must on an Optional with None value")
+	} else {
+		return res
+	}
+}
+
+// GetOr is the same as Get, but will return the passed value instead of an error if the Option is None. Another convenience
+// function
+func GetOr[T comparable](opt Optional[T], val T) T {
+	res, err := opt.Get()
+	if err != nil {
+		return val
+	} else {
+		return res
+	}
+}
+
+// GetOrElse calls Get(), but run the passed function and return the result instead of producing an error if the option
+// is None.
+func GetOrElse[T comparable](opt Option[T], f func() T) T {
+	res, err := opt.Get()
+	if err != nil {
+		return f()
+	} else {
+		return res
+	}
+}
+
+// GetOrInsert calls Get, but will call Replace on the passed value then return it if the Option is None
+func GetOrInsert[T comparable](opt MutableOptional[T], val T) (T, error) {
+	res, err := opt.Get()
+
+	if err != nil {
+		if _, err = opt.Replace(val); err != nil {
+			return val, err
+		}
+		return val, nil
+	} else {
+		return res, nil
+	}
+}
+
+// TransformOr just calls Transform(), except None values are mapped to backup before being transformed.
+func TransformOr[T comparable](opt MutableOptional[T], t Transformer[T], backup T) error {
+	if opt.IsNone() {
+		if _, err := opt.Replace(backup); err != nil {
+			return err
+		}
+	}
+	return opt.Transform(t)
 }

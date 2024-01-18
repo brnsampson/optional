@@ -48,11 +48,6 @@ func (o Option[T]) IsSome() bool {
 	return !o.none
 }
 
-// IsSomeAnd returns true if the Option has a value of Some(x) and f(x) == true
-func (o Option[T]) IsSomeAnd(f func(T) bool) bool {
-	return !o.none && f(o.inner)
-}
-
 func (o Option[T]) IsNone() bool {
 	return o.none
 }
@@ -85,23 +80,21 @@ func (o *Option[T]) Clear() {
 	o.none = true
 }
 
-// ClearIfMatch calls clear if Option.Match(probe) == true. This is a convenience for situations where you need to convert
-// from a value of T with known "magic value" which implies None. A good example of this is if you have an int loaded
-// from command line flags and you know that any flag omitted by the user will be assigned to 0. This can be done like this:
-// o := Some(x)
-// o.ClearIfMatch(0)
-func (o *Option[T]) ClearIfMatch(probe T) {
-	if o.Match(probe) {
-		o.Clear()
-	}
-}
-
-// SetVal converts a Some(x) or None type Option into a Some(value) value.
-// For more complex Optional types which might perform validation, this Option can be embedded and you can just
-// override SetVal()
-func (o *Option[T]) SetVal(value T) {
+// Replace converts a Some(x) or None type Option into a Some(value) value.
+// The base Option struct can never return an error from Replace, so it is generally safe to ignore the returned values
+// from this, e.g. calling o.Replace() instead of _, _ = o.Replace().
+func (o *Option[T]) Replace(value T) (Optional[T], error) {
+	tmp, err := o.Get()
 	o.inner = value
 	o.none = false
+
+	if err != nil {
+		// it was None
+		return None[T](), nil
+	} else {
+		return Some(tmp), nil
+	}
+
 }
 
 // Get returns the current wrapped value of a Some value Option and returns an error if the Option is None.
@@ -110,76 +103,6 @@ func (o Option[T]) Get() (T, error) {
 		return o.inner, nil
 	}
 	return o.inner, optionalError("Attempted to Get Option with None value")
-}
-
-// GetOr is the same as Get, but will return the passed value instead of an error if the Option is None.
-func (o Option[T]) GetOr(val T) T {
-	res, err := o.Get()
-	if err != nil {
-		return val
-	} else {
-		return res
-	}
-}
-
-// GetOrInsert is the same as Get, but will call SetVal on the passed value first if the Option is None
-func (o *Option[T]) GetOrInsert(val T) T {
-	res, err := o.Get()
-
-	if err != nil {
-		o.SetVal(val)
-		return val
-	} else {
-		return res
-	}
-}
-
-// Must is like Get, but panic instead of producing an error.
-func (o Option[T]) Must() T {
-	res, err := o.Get()
-	if err != nil {
-		panic("Attempted to call Must on an Option with None value")
-	} else {
-		return res
-	}
-}
-
-// Unwrap returns the current wrapped value of a Some value Option and returns an error if the Option is None. In either
-// case, the Option is set to None to indicate that it has been consumed.
-func (o *Option[T]) Unwrap() (T, error) {
-	res, err := o.Get()
-	o.Clear()
-	return res, err
-}
-
-// MustUnwrap is like Unwrap, but panic instead of producing an error.
-func (o *Option[T]) MustUnwrap() T {
-	res, err := o.Unwrap()
-	if err != nil {
-		panic("Attempted to UnsafeUnwrap an Option with None value")
-	} else {
-		return res
-	}
-}
-
-// UnwrapOr is like Unwrap, but return the passed value instead of producing an error.
-func (o *Option[T]) UnwrapOr(val T) T {
-	res, err := o.Unwrap()
-	if err != nil {
-		return val
-	} else {
-		return res
-	}
-}
-
-// UnwrapOrElse is like Unwrap, but run the passed function and return the result instead of producing an error.
-func (o *Option[T]) UnwrapOrElse(f func() T) T {
-	res, err := o.Unwrap()
-	if err != nil {
-		return f()
-	} else {
-		return res
-	}
 }
 
 // Match tests if the inner value of Option == the passed value
@@ -191,75 +114,18 @@ func (o Option[T]) Match(probe T) bool {
 	}
 }
 
-// Eq tests if two values implementing Optional are equal. They do not need to be the same concrete type.
-func (o Option[T]) Eq(other Optional[T]) bool {
-	if o.none && other.IsNone() {
-		return true
-	} else if !o.none && other.IsSome() {
-		// We do not know if other is a pointer type or not, so play it safe
-		return other.Match(o.inner)
-	} else {
-		// one is none and the other is some
-		return false
-	}
-}
-
-// And returns None if the Option is None, and other if the original Option is Some. Conceptually, think o && other
-func (o Option[T]) And(other Optional[T]) Optional[T] {
-	if o.none {
-		return o
-	} else {
-		return other
-	}
-}
-
-// Or returns the first Option if it is Some, and other if it is None. Conceptually, it is o || other
-func (o Option[T]) Or(other Optional[T]) Optional[T] {
-	if o.none {
-		return other
-	} else {
-		return o
-	}
-}
-
 // Transform applies function f(T) to the inner value of the Option. If the Option is None, then the Option will remain
 // None.
-func (o *Option[T]) Transform(f func(inner T) T) {
+func (o *Option[T]) Transform(t Transformer[T]) error {
 	if o.IsSome() {
-		tmp := f(o.inner)
-		o.SetVal(tmp)
-	}
-}
-
-// TransformOr is like Transform, except None values are mapped to backup
-func (o *Option[T]) TransformOr(f func(T) T, backup T) {
-	if o.IsSome() {
-		tmp := f(o.inner)
-		o.SetVal(tmp)
-	} else {
-		o.SetVal(backup)
-	}
-}
-
-// TransformOrError is like Transform, except the passed function can return an error for invalid values
-func (o *Option[T]) TransformOrError(f func(T) (T, error)) error {
-	if o.IsSome() {
-		tmp, err := f(o.inner)
+		tmp, err := t(o.inner)
 		if err != nil {
 			return err
 		}
 
-		o.SetVal(tmp)
+		o.Replace(tmp)
 	}
 	return nil
-}
-
-// BinaryTransform set the value of the Option to f(inner, second). None options always map to None.
-func (o *Option[T]) BinaryTransform(second T, f func(T, T) T) {
-	if o.IsSome() {
-		tmp := f(o.inner, second)
-		o.SetVal(tmp)
-	}
 }
 
 // MarshalJSON implements the encoding.json.Marshaler interface. None values are marshaled to json null, while Some values are
@@ -290,7 +156,7 @@ func (o *Option[T]) UnmarshalJSON(data []byte) error {
 	if tmp2 != nil {
 		// According to the spec, this should be nil if we recieved a json null, but I've found that you
 		// actually will get a valid pointer going to the zero value.
-		o.SetVal(*tmp2)
+		o.Replace(*tmp2)
 	} else {
 		o.Clear()
 	}

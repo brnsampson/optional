@@ -1,26 +1,26 @@
-package config_test
+package confopt_test
 
 import (
-	"github.com/brnsampson/optional/config"
+	"github.com/brnsampson/optional/confopt"
 	"gotest.tools/v3/assert"
 	"reflect"
 	"testing"
 )
 
 func TestStrType(t *testing.T) {
-	o := config.SomeStr("A dumb test string")
+	o := confopt.SomeStr("A dumb test string")
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
 
 func TestStrString(t *testing.T) {
 	str := "testing this tester with the testing module"
-	o := config.SomeStr(str)
+	o := confopt.SomeStr(str)
 	assert.Equal(t, str, o.String())
 }
 
 func TestStrMarshalText(t *testing.T) {
 	str := "testing this tester with the testing module"
-	o := config.SomeStr(str)
+	o := confopt.SomeStr(str)
 
 	s, err := o.MarshalText()
 	assert.NilError(t, err)
@@ -33,7 +33,7 @@ func TestStrUnmarshalText(t *testing.T) {
 	intStr := "42"
 
 	// Text sucessful unmarshaling
-	o := config.NoStr()
+	o := confopt.NoStr()
 	err := o.UnmarshalText([]byte(str))
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())

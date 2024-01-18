@@ -1,4 +1,4 @@
-package config
+package confopt
 
 import (
 	"encoding/json"
@@ -89,7 +89,7 @@ func (o *Time) UnmarshalText(text []byte) error {
 		for i, f := range o.formats {
 			t, err := time.Parse(f, tmp)
 			if err == nil {
-				o.SetVal(t)
+				o.Replace(t)
 				break
 			}
 			if i == l-1 {

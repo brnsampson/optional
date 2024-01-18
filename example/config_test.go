@@ -1,7 +1,7 @@
 package main_test
 
 import (
-	"github.com/brnsampson/optional/config"
+	"github.com/brnsampson/optional/confopt"
 	main "github.com/brnsampson/optional/example"
 	"gotest.tools/v3/assert"
 	"testing"
@@ -11,10 +11,10 @@ import (
 
 func TestSubConfigBuilderPieces(t *testing.T) {
 	port := 1234
-	portOption := config.SomeInt(port)
+	portOption := confopt.SomeInt(port)
 	port2 := 4000
-	port2Option := config.SomeInt(port2)
-	none := config.NoInt()
+	port2Option := confopt.SomeInt(port2)
+	none := confopt.NoInt()
 
 	// Check OrPort works as expected
 	scl := main.NewSubConfigLoader()
@@ -43,10 +43,10 @@ func TestSubConfigBuilderPieces(t *testing.T) {
 
 func TestSubConfigLoaderMerge(t *testing.T) {
 	port1 := 1234
-	port1Option := config.SomeInt(port1)
+	port1Option := confopt.SomeInt(port1)
 	scl1 := main.NewSubConfigLoader().WithPort(port1Option)
 	port2 := 4000
-	port2Option := config.SomeInt(port2)
+	port2Option := confopt.SomeInt(port2)
 	scl2 := main.NewSubConfigLoader().WithPort(port2Option)
 
 	expected := main.SubConfigLoader{port1Option}
@@ -56,10 +56,10 @@ func TestSubConfigLoaderMerge(t *testing.T) {
 
 func TestConfigBuilderPieces(t *testing.T) {
 	host := "myhost"
-	hostOption := config.SomeStr(host)
+	hostOption := confopt.SomeStr(host)
 	host2 := "otherhost"
-	host2Option := config.SomeStr(host2)
-	none := config.NoStr()
+	host2Option := confopt.SomeStr(host2)
+	none := confopt.NoStr()
 
 	// Check OrHost works as expected
 	scl := main.NewConfigLoader()
@@ -88,17 +88,17 @@ func TestConfigBuilderPieces(t *testing.T) {
 
 func TestConfigLoaderMerge(t *testing.T) {
 	port1 := 1234
-	port1Option := config.SomeInt(port1)
+	port1Option := confopt.SomeInt(port1)
 	scl1 := main.NewSubConfigLoader().WithPort(port1Option)
 
 	host1 := "myhost"
-	host1Option := config.SomeStr(host1)
+	host1Option := confopt.SomeStr(host1)
 	sc1 := main.NewConfigLoader().WithHost(host1Option)
 	host2 := "otherHost"
-	host2Option := config.SomeStr(host2)
+	host2Option := confopt.SomeStr(host2)
 	sc2 := main.NewConfigLoader().WithHost(host2Option)
 
-	expected := main.ConfigLoader{config.NoStr(), host1Option, scl1}
+	expected := main.ConfigLoader{confopt.NoStr(), host1Option, scl1}
 	res := sc1.Merged(sc2)
 	assert.Assert(t, expected.Host.Eq(res.Host))
 }

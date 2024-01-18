@@ -21,22 +21,22 @@ func TestOptionalClone(t *testing.T) {
 	o := optional.Some(42)
 	assert.Assert(t, o.IsSome())
 	clone := o.Clone()
-	o.SetVal(49)
+	o.Replace(49)
 	assert.Assert(t, clone.IsSome())
-	assert.Equal(t, 42, clone.Must())
+	assert.Equal(t, 42, optional.Must(clone))
 }
 
 func TestMutableOptionalMutableClone(t *testing.T) {
 	o := optional.Some(42)
 	var op optional.MutableOptional[int] = &o
 	clone := op.MutableClone()
-	clone.SetVal(49)
+	clone.Replace(49)
 	assert.Assert(t, op.IsSome())
-	assert.Equal(t, 42, op.MustUnwrap())
+	assert.Equal(t, 42, optional.Must(op))
 }
 
 func TestOptionBasics(t *testing.T) {
-	// Covers IsSome, IsNone, Clear, SetVal, and Get
+	// Covers IsSome, IsNone, Clear, Replace, and Get
 	val := 42
 	val2 := 49
 	errString := "Attempted to Get Option with None value"
@@ -58,139 +58,15 @@ func TestOptionBasics(t *testing.T) {
 	tmp, err = o.Get()
 	assert.Error(t, err, errString)
 
-	o.SetVal(val2)
+	replaced, err := o.Replace(val2)
+	assert.NilError(t, err)
+	assert.Assert(t, replaced.IsNone())
 	assert.Assert(t, o.IsSome())
 	assert.Assert(t, !o.IsNone())
 
 	tmp, err = o.Get()
 	assert.NilError(t, err)
 	assert.Equal(t, val2, tmp)
-}
-
-// Skipping ClearIfMatch since it is literally just calling two covered functions
-
-func TestOptionGetOr(t *testing.T) {
-	val := 42
-	val2 := 49
-
-	o := optional.Some(val)
-	none := optional.None[int]()
-
-	tmp := o.GetOr(val2)
-	assert.Equal(t, val, tmp)
-
-	tmp = none.GetOr(val2)
-	assert.Equal(t, val2, tmp)
-	assert.Assert(t, none.IsNone())
-}
-
-func TestOptionGetOrInsert(t *testing.T) {
-	val := 42
-	val2 := 49
-
-	o := optional.Some(val)
-	none := optional.None[int]()
-
-	tmp := o.GetOrInsert(val2)
-	assert.Equal(t, val, tmp)
-
-	tmp = none.GetOrInsert(val2)
-	assert.Equal(t, val2, tmp)
-	assert.Assert(t, none.IsSome())
-	tmp = 0
-
-	tmp, err := none.Get()
-	assert.NilError(t, err)
-	assert.Equal(t, val2, tmp)
-}
-
-func TestOptionMustPanics(t *testing.T) {
-	defer func() { _ = recover() }()
-	o := optional.None[int]()
-	_ = o.Must()
-
-	t.Errorf("Must() failed to panic on a None value Option")
-}
-
-func TestOptionUnwrap(t *testing.T) {
-	// Covers Unwrap, MustUnwrap, UnwrapOr, and UnwrapOrElse
-	val := 42
-	errString := "Attempted to Get Option with None value"
-	o := optional.Some(val)
-	assert.Assert(t, o.IsSome())
-	assert.Assert(t, !o.IsNone())
-
-	tmp, err := o.Unwrap()
-	assert.NilError(t, err)
-	assert.Equal(t, val, tmp)
-	assert.Assert(t, !o.IsSome())
-	assert.Assert(t, o.IsNone())
-
-	tmp, err = o.Unwrap()
-	assert.Error(t, err, errString)
-}
-
-func TestOptionMustUnwrapPanics(t *testing.T) {
-	defer func() { _ = recover() }()
-	o := optional.None[int]()
-	_ = o.MustUnwrap()
-
-	t.Errorf("MustUnwrap() failed to panic on a None value Option")
-}
-
-func TestOptionMustUnwrap(t *testing.T) {
-	// Covers Unwrap, MustUnwrap, UnwrapOr, and UnwrapOrElse
-	val := 42
-
-	o := optional.Some(val)
-	assert.Assert(t, o.IsSome())
-	assert.Assert(t, !o.IsNone())
-
-	tmp := o.MustUnwrap()
-	assert.Equal(t, val, tmp)
-	assert.Assert(t, !o.IsSome())
-	assert.Assert(t, o.IsNone())
-}
-
-func TestOptionUnwrapOr(t *testing.T) {
-	// Covers Unwrap, MustUnwrap, UnwrapOr, and UnwrapOrElse
-	val := 42
-	def_val := 49
-
-	o := optional.Some(val)
-	assert.Assert(t, o.IsSome())
-	assert.Assert(t, !o.IsNone())
-
-	tmp := o.UnwrapOr(def_val)
-	assert.Equal(t, val, tmp)
-	assert.Assert(t, !o.IsSome())
-	assert.Assert(t, o.IsNone())
-
-	tmp = o.UnwrapOr(def_val)
-	assert.Equal(t, def_val, tmp)
-	assert.Assert(t, !o.IsSome())
-	assert.Assert(t, o.IsNone())
-}
-
-func TestOptionUnwrapOrElse(t *testing.T) {
-	// Covers Unwrap, MustUnwrap, UnwrapOr, and UnwrapOrElse
-	val := 42
-	def_val := 49
-	def_func := func() int { return def_val }
-
-	o := optional.Some(val)
-	assert.Assert(t, o.IsSome())
-	assert.Assert(t, !o.IsNone())
-
-	tmp := o.UnwrapOrElse(def_func)
-	assert.Equal(t, val, tmp)
-	assert.Assert(t, !o.IsSome())
-	assert.Assert(t, o.IsNone())
-
-	tmp = o.UnwrapOrElse(def_func)
-	assert.Equal(t, def_val, tmp)
-	assert.Assert(t, !o.IsSome())
-	assert.Assert(t, o.IsNone())
 }
 
 func TestOptionMatch(t *testing.T) {
@@ -204,7 +80,7 @@ func TestOptionMatch(t *testing.T) {
 	assert.Assert(t, !none.Match(val))
 }
 
-func TestOptionEq(t *testing.T) {
+func TestOptionEquality(t *testing.T) {
 	val := 42
 	val2 := 49
 	none := optional.None[int]()
@@ -218,98 +94,7 @@ func TestOptionEq(t *testing.T) {
 	assert.Assert(t, o2 != none)
 }
 
-func TestOptionAnd(t *testing.T) {
-	val1 := 42
-	val2 := 49
-	o1 := optional.Some(val1)
-	o2 := optional.Some(val2)
-	none := optional.None[int]()
-
-	tmpO := o1.And(&none)
-	assert.Assert(t, tmpO.IsNone())
-
-	tmpO = none.And(&o1)
-	assert.Assert(t, tmpO.IsNone())
-
-	tmpO = o1.And(&o2)
-	tmp := tmpO.Must()
-	assert.Equal(t, val2, tmp)
-
-	tmpO = o2.And(&o1)
-	tmp = tmpO.Must()
-	assert.Equal(t, val1, tmp)
-}
-
-func TestOptionOr(t *testing.T) {
-	val1 := 42
-	val2 := 49
-	o1 := optional.Some(val1)
-	o2 := optional.Some(val2)
-	none := optional.None[int]()
-	none2 := optional.None[int]()
-
-	tmpO := none.Or(&o1)
-	tmp := tmpO.Must()
-	assert.Equal(t, val1, tmp)
-
-	tmpO = o1.Or(&none)
-	tmp = tmpO.Must()
-	assert.Equal(t, val1, tmp)
-
-	tmpO = o2.Or(&o1)
-	tmp = tmpO.Must()
-	assert.Equal(t, val2, tmp)
-
-	tmpO = none.Or(&none2)
-	assert.Assert(t, tmpO.IsNone())
-}
-
 func TestOptionTransform(t *testing.T) {
-	val := 42
-	transform := func(x int) int { return x + 7 }
-	after_val := transform(val)
-
-	o := optional.Some(val)
-	assert.Assert(t, o.IsSome())
-	assert.Assert(t, !o.IsNone())
-
-	o.Transform(transform)
-
-	tmp, err := o.Get()
-	assert.NilError(t, err)
-	assert.Equal(t, after_val, tmp)
-
-	// Transforming a None value should still result in a None.
-	none := optional.None[int]()
-	none.Transform(transform)
-	assert.Assert(t, none.IsNone())
-}
-
-func TestOptionTransformOr(t *testing.T) {
-	val := 42
-	def := 99
-	transform := func(x int) int { return x + 7 }
-	after_val := transform(val)
-
-	o := optional.Some(val)
-	assert.Assert(t, o.IsSome())
-	assert.Assert(t, !o.IsNone())
-
-	o.TransformOr(transform, def)
-	tmp, err := o.Get()
-	assert.NilError(t, err)
-	assert.Equal(t, after_val, tmp)
-
-	// Transforming a None value makes it a Some(val)
-	none := optional.None[int]()
-	none.TransformOr(transform, def)
-
-	tmp, err = none.Get()
-	assert.NilError(t, err)
-	assert.Equal(t, def, tmp)
-}
-
-func TestOptionTransformOrError(t *testing.T) {
 	val := 42
 	err_string := "Error"
 	transform := func(x int) (int, error) { return x + 7, nil }
@@ -322,12 +107,12 @@ func TestOptionTransformOrError(t *testing.T) {
 
 	// Transforming a None value results in a None
 	none := optional.None[int]()
-	err := none.TransformOrError(transform)
+	err := none.Transform(transform)
 	assert.NilError(t, err)
 	assert.Assert(t, none.IsNone())
 
 	// Transforming eith a function that doesn't err is the same as a normal transform
-	err = o.TransformOrError(transform)
+	err = o.Transform(transform)
 	assert.NilError(t, err)
 
 	tmp, err := o.Get()
@@ -335,35 +120,13 @@ func TestOptionTransformOrError(t *testing.T) {
 	assert.Equal(t, after_val, tmp)
 
 	// transforming with a function that produces an error should return the same error
-	err = o.TransformOrError(err_transform)
+	err = o.Transform(err_transform)
 	assert.Error(t, err, err_string)
 
 	// The error should prevent the transform from actually being applied
 	tmp, err = o.Get()
 	assert.NilError(t, err)
 	assert.Equal(t, after_val, tmp)
-}
-
-func TestOptionBinaryTransform(t *testing.T) {
-	val := 42
-	inc := 7
-
-	transform := func(x, y int) int { return x + y }
-	after_val := transform(val, inc)
-
-	o := optional.Some(val)
-	assert.Assert(t, o.IsSome())
-	assert.Assert(t, !o.IsNone())
-
-	o.BinaryTransform(inc, transform)
-	tmp, err := o.Get()
-	assert.NilError(t, err)
-	assert.Equal(t, after_val, tmp)
-
-	// Transforming a None value leaves it as a None
-	none := optional.None[int]()
-	none.BinaryTransform(inc, transform)
-	assert.Assert(t, none.IsNone())
 }
 
 func TestOptionMarshalJSONNumber(t *testing.T) {
@@ -491,27 +254,27 @@ func TestOptionUnMarshalJSONNumber(t *testing.T) {
 	nullTest := []byte("null")
 	err := json.Unmarshal(nullTest, &n)
 	assert.NilError(t, err)
-	assert.Assert(t, expected.Eq(&n))
+	assert.Assert(t, optional.Equal(expected, n))
 
 	intTest := []byte("42")
 	var o optional.Option[int]
 	expected = optional.Some(42)
 	err = json.Unmarshal(intTest, &o)
 	assert.NilError(t, err)
-	assert.Assert(t, expected.Eq(&o))
+	assert.Assert(t, optional.Equal(expected, o))
 
 	var p optional.Option[uint]
 	uintExpected := optional.Some[uint](42)
 	err = json.Unmarshal(intTest, &p)
 	assert.NilError(t, err)
-	assert.Assert(t, uintExpected.Eq(&p))
+	assert.Assert(t, optional.Equal(uintExpected, p))
 
 	floatTest := []byte("42.1")
 	var q optional.Option[float64]
 	floatExpected := optional.Some(42.1)
 	err = json.Unmarshal(floatTest, &q)
 	assert.NilError(t, err)
-	assert.Assert(t, floatExpected.Eq(&q))
+	assert.Assert(t, optional.Equal(floatExpected, q))
 }
 
 func TestOptionUnMarshalJSONString(t *testing.T) {
@@ -520,14 +283,14 @@ func TestOptionUnMarshalJSONString(t *testing.T) {
 	nullTest := []byte("null")
 	err := json.Unmarshal(nullTest, &n)
 	assert.NilError(t, err)
-	assert.Assert(t, expected.Eq(&n))
+	assert.Assert(t, optional.Equal(expected, n))
 
 	test := []byte(`"this is a json string"`)
 	var o optional.Option[string]
 	expected = optional.Some("this is a json string")
 	err = json.Unmarshal(test, &o)
 	assert.NilError(t, err)
-	assert.Assert(t, expected.Eq(&o))
+	assert.Assert(t, optional.Equal(expected, o))
 }
 
 func TestOptionUnMarshalJSONBool(t *testing.T) {
@@ -536,14 +299,14 @@ func TestOptionUnMarshalJSONBool(t *testing.T) {
 	nullTest := []byte("null")
 	err := json.Unmarshal(nullTest, &n)
 	assert.NilError(t, err)
-	assert.Assert(t, expected.Eq(&n))
+	assert.Assert(t, optional.Equal(expected, n))
 
 	test := []byte("true")
 	var o optional.Option[bool]
 	expected = optional.Some(true)
 	err = json.Unmarshal(test, &o)
 	assert.NilError(t, err)
-	assert.Assert(t, expected.Eq(&o))
+	assert.Assert(t, optional.Equal(expected, o))
 }
 
 func TestOptionUnMarshalJSONArray(t *testing.T) {
@@ -566,7 +329,7 @@ func TestOptionUnMarshalJSONObject(t *testing.T) {
 	for name, opt := range expected {
 		val, ok := m[name]
 		assert.Assert(t, ok)
-		assert.Assert(t, opt.Eq(&val))
+		assert.Assert(t, optional.Equal(opt, val))
 	}
 }
 
@@ -590,12 +353,12 @@ func TestOptionUnMarshalJSON(t *testing.T) {
 	var o optional.Option[string]
 	err := json.Unmarshal(str, &o)
 	assert.NilError(t, err)
-	assert.Assert(t, o.Eq(&expectedStr))
+	assert.Assert(t, optional.Equal(expectedStr, o))
 
 	var p optional.Option[string]
 	err = json.Unmarshal([]byte(none), &p)
 	assert.NilError(t, err)
-	assert.Assert(t, p.Eq(&expectedNone))
+	assert.Assert(t, optional.Equal(expectedNone, p))
 
 	rawJSON := []byte(`{"animal": "monkey", "mineral": null, "man": "Lincon", "other": { "number": 42 }}`)
 	expected := S{optional.Some("monkey"), optional.None[string](), optional.Some("Lincon"), Inner{optional.Some(42)}}

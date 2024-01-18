@@ -1,4 +1,4 @@
-package config_test
+package confopt_test
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 	"crypto/ed25519"
 	"crypto/rsa"
 	"crypto/x509"
-	"github.com/brnsampson/optional/config"
+	"github.com/brnsampson/optional/confopt"
 	"gotest.tools/v3/assert"
 	"os"
 	"path/filepath"
@@ -16,9 +16,26 @@ import (
 )
 
 func TestCertType(t *testing.T) {
-	o := config.SomeCert("/not/a/real/path")
+	o, err := confopt.SomeCert("/not/a/real/path")
+	assert.NilError(t, err)
+
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
+
+func TestCertGet(t *testing.T) {
+	path := "../tls/rsa/cert.pem"
+	o, err := confopt.SomeCert(path)
+	assert.NilError(t, err)
+	abs, err := filepath.Abs(path)
+	// an error here doesn't mean our library is broken, just that the path we chose to test with isn't valid.
+	assert.NilError(t, err)
+
+	tmp, err := o.Get()
+	assert.NilError(t, err)
+
+	assert.Equal(t, abs, tmp)
+}
+
 
 func TestCertString(t *testing.T) {
 	path := "../tls/rsa/cert.pem"
@@ -26,7 +43,8 @@ func TestCertString(t *testing.T) {
 	// an error here doesn't mean our library is broken, just that the path we chose to test with isn't valid.
 	assert.NilError(t, err)
 
-	o := config.SomeCert(path)
+	o, err := confopt.SomeCert(path)
+	assert.NilError(t, err)
 	assert.Equal(t, abs, o.String())
 }
 
@@ -36,7 +54,8 @@ func TestCertMarshalText(t *testing.T) {
 	// an error here doesn't mean our library is broken, just that the path we chose to test with isn't valid.
 	assert.NilError(t, err)
 
-	o := config.SomeCert(path)
+	o, err := confopt.SomeCert(path)
+	assert.NilError(t, err)
 
 	s, err := o.MarshalText()
 	assert.NilError(t, err)
@@ -55,7 +74,7 @@ func TestCertUnmarshalText(t *testing.T) {
 	assert.NilError(t, err)
 
 	// Text sucessful unmarshaling
-	o := config.NoCert()
+	o := confopt.NoCert()
 	err = o.UnmarshalText([]byte(path))
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())
@@ -82,8 +101,10 @@ func TestCertUnmarshalText(t *testing.T) {
 func TestCertFilePermsValid(t *testing.T) {
 	valid_path := "../tls/rsa/cert.pem"
 	invalid_path := "../tls/rsa/cert_bad_perms.pem"
-	v := config.SomeCert(valid_path)
-	i := config.SomeCert(invalid_path)
+	v, err := confopt.SomeCert(valid_path)
+	assert.NilError(t, err)
+	i, err := confopt.SomeCert(invalid_path)
+	assert.NilError(t, err)
 
 	good, err := v.FilePermsValid()
 	assert.NilError(t, err)
@@ -103,18 +124,21 @@ func TestCertSetFilePerms(t *testing.T) {
 	defer os.Remove(path)
 	f.Chmod(0666)
 
-	o := config.SomeCert(path)
+	o, err := confopt.SomeCert(path)
+	assert.NilError(t, err)
 	o.SetFilePerms()
 	s, err := f.Stat()
 	assert.NilError(t, err)
-	assert.Equal(t, config.PubKeyFilePerms, s.Mode())
+	assert.Equal(t, confopt.PubKeyFilePerms, s.Mode())
 }
 
 func TestCertReadRSACerts(t *testing.T) {
 	expectedCertIssuer := "CN=www.whobe.us,OU=optional,O=BS Workshops,L=Who knows,ST=California,C=US"
 	certPath := "../tls/rsa/cert.pem"
 
-	c := config.SomeCert(certPath)
+	c, err := confopt.SomeCert(certPath)
+	assert.NilError(t, err)
+
 	certs, err := c.ReadCerts()
 	assert.NilError(t, err)
 	assert.Assert(t, len(certs) == 1)
@@ -128,7 +152,9 @@ func TestCertReadECDSACerts(t *testing.T) {
 	expectedCertIssuer := "CN=www.whobe.us,OU=optional,O=BS Workshops,L=Who knows,ST=California,C=US"
 	certPath := "../tls/ecdsa/cert.pem"
 
-	c := config.SomeCert(certPath)
+	c, err := confopt.SomeCert(certPath)
+	assert.NilError(t, err)
+
 	certs, err := c.ReadCerts()
 	assert.NilError(t, err)
 	assert.Assert(t, len(certs) == 1)
@@ -142,7 +168,9 @@ func TestCertReadED25519Certs(t *testing.T) {
 	expectedCertIssuer := "CN=www.whobe.us,OU=optional,O=BS Workshops,L=Who knows,ST=California,C=US"
 	certPath := "../tls/ed25519/cert.pem"
 
-	c := config.SomeCert(certPath)
+	c, err := confopt.SomeCert(certPath)
+	assert.NilError(t, err)
+
 	certs, err := c.ReadCerts()
 	assert.NilError(t, err)
 	assert.Assert(t, len(certs) == 1)
@@ -155,7 +183,9 @@ func TestCertReadED25519Certs(t *testing.T) {
 func TestCertFileWriteCerts(t *testing.T) {
 	// Read in valid certificates (tested above)
 	certPath := "../tls/rsa/cert.pem"
-	c := config.SomeCert(certPath)
+	c, err := confopt.SomeCert(certPath)
+	assert.NilError(t, err)
+
 	certs, err := c.ReadCerts()
 	assert.NilError(t, err)
 
@@ -168,7 +198,9 @@ func TestCertFileWriteCerts(t *testing.T) {
 	f.Chmod(0644)
 	f.Close()
 
-	tc := config.SomeCert(path)
+	tc, err := confopt.SomeCert(path)
+	assert.NilError(t, err)
+
 	// Write certificates to new file
 	err = tc.WriteCerts(certs)
 	assert.NilError(t, err)
@@ -184,7 +216,8 @@ func TestCertFileWriteCerts(t *testing.T) {
 }
 
 func TestPubKeyType(t *testing.T) {
-	o := config.SomePubKey("/not/a/real/path")
+	o, err := confopt.SomePubKey("/not/a/real/path")
+	assert.NilError(t, err)
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
 
@@ -194,7 +227,8 @@ func TestPubKeyString(t *testing.T) {
 	// an error here doesn't mean our library is broken, just that the path we chose to test with isn't valid.
 	assert.NilError(t, err)
 
-	o := config.SomePubKey(path)
+	o, err := confopt.SomePubKey(path)
+	assert.NilError(t, err)
 	assert.Equal(t, abs, o.String())
 }
 
@@ -204,7 +238,8 @@ func TestPubKeyMarshalText(t *testing.T) {
 	// an error here doesn't mean our library is broken, just that the path we chose to test with isn't valid.
 	assert.NilError(t, err)
 
-	o := config.SomePubKey(path)
+	o, err := confopt.SomePubKey(path)
+	assert.NilError(t, err)
 
 	s, err := o.MarshalText()
 	assert.NilError(t, err)
@@ -223,7 +258,7 @@ func TestPubKeyUnmarshalText(t *testing.T) {
 	assert.NilError(t, err)
 
 	// Text sucessful unmarshaling
-	o := config.NoPubKey()
+	o := confopt.NoPubKey()
 	err = o.UnmarshalText([]byte(path))
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())
@@ -250,8 +285,10 @@ func TestPubKeyUnmarshalText(t *testing.T) {
 func TestPubKeyFilePermsValid(t *testing.T) {
 	valid_path := "../tls/rsa/pubkey.pem"
 	invalid_path := "../tls/rsa/pubkey_bad_perms.pem"
-	v := config.SomePubKey(valid_path)
-	i := config.SomePubKey(invalid_path)
+	v, err := confopt.SomePubKey(valid_path)
+	assert.NilError(t, err)
+	i, err := confopt.SomePubKey(invalid_path)
+	assert.NilError(t, err)
 
 	good, err := v.FilePermsValid()
 	assert.NilError(t, err)
@@ -271,16 +308,18 @@ func TestPubKeySetFilePerms(t *testing.T) {
 	defer os.Remove(path)
 	f.Chmod(0666)
 
-	o := config.SomePubKey(path)
+	o, err := confopt.SomePubKey(path)
+	assert.NilError(t, err)
 	o.SetFilePerms()
 	s, err := f.Stat()
 	assert.NilError(t, err)
-	assert.Equal(t, config.PubKeyFilePerms, s.Mode())
+	assert.Equal(t, confopt.PubKeyFilePerms, s.Mode())
 }
 
 func TestPubKeyReadPublicKeysRSA(t *testing.T) {
 	pubPath := "../tls/rsa/pubkey.pem"
-	p := config.SomePubKey(pubPath)
+	p, err := confopt.SomePubKey(pubPath)
+	assert.NilError(t, err)
 	keys, err := p.ReadPublicKeys()
 	assert.NilError(t, err)
 
@@ -298,7 +337,8 @@ func TestPubKeyReadPublicKeysRSA(t *testing.T) {
 func TestPubKeyReadPublicKeysECDSA(t *testing.T) {
 	pubPath := "../tls/ecdsa/pub.pem"
 
-	p := config.SomePubKey(pubPath)
+	p, err := confopt.SomePubKey(pubPath)
+	assert.NilError(t, err)
 	keys, err := p.ReadPublicKeys()
 	assert.NilError(t, err)
 
@@ -316,7 +356,8 @@ func TestPubKeyReadPublicKeysECDSA(t *testing.T) {
 func TestPubKeyReadPublicKeysED25519(t *testing.T) {
 	pubPath := "../tls/ed25519/pub.pem"
 
-	p := config.SomePubKey(pubPath)
+	p, err := confopt.SomePubKey(pubPath)
+	assert.NilError(t, err)
 	keys, err := p.ReadPublicKeys()
 	assert.NilError(t, err)
 
@@ -334,7 +375,8 @@ func TestPubKeyReadPublicKeysED25519(t *testing.T) {
 func TestPubKeyWritePubKey(t *testing.T) {
 	// Read in valid certificates (tested above)
 	pubPath := "../tls/rsa/pubkey.pem"
-	c := config.SomePubKey(pubPath)
+	c, err := confopt.SomePubKey(pubPath)
+	assert.NilError(t, err)
 	keys, err := c.ReadPublicKeys()
 	assert.NilError(t, err)
 
@@ -347,7 +389,8 @@ func TestPubKeyWritePubKey(t *testing.T) {
 	f.Chmod(0666)
 	f.Close()
 
-	tc := config.SomePubKey(path)
+	tc, err := confopt.SomePubKey(path)
+	assert.NilError(t, err)
 	// Write certificates to new file
 	err = tc.WritePublicKeys(keys)
 	assert.NilError(t, err)
@@ -376,7 +419,8 @@ func TestPubKeyWritePubKey(t *testing.T) {
 }
 
 func TestPrivateKeyType(t *testing.T) {
-	o := config.SomePrivateKey("/not/a/real/path")
+	o, err := confopt.SomePrivateKey("/not/a/real/path")
+	assert.NilError(t, err)
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
 
@@ -386,7 +430,8 @@ func TestPrivateKeyString(t *testing.T) {
 	// an error here doesn't mean our library is broken, just that the path we chose to test with isn't valid.
 	assert.NilError(t, err)
 
-	o := config.SomePrivateKey(path)
+	o, err := confopt.SomePrivateKey(path)
+	assert.NilError(t, err)
 	assert.Equal(t, abs, o.String())
 }
 
@@ -396,7 +441,8 @@ func TestPrivateKeyMarshalText(t *testing.T) {
 	// an error here doesn't mean our library is broken, just that the path we chose to test with isn't valid.
 	assert.NilError(t, err)
 
-	o := config.SomePrivateKey(path)
+	o, err := confopt.SomePrivateKey(path)
+	assert.NilError(t, err)
 
 	s, err := o.MarshalText()
 	assert.NilError(t, err)
@@ -415,7 +461,7 @@ func TestPrivateKeyUnmarshalText(t *testing.T) {
 	assert.NilError(t, err)
 
 	// Text sucessful unmarshaling
-	o := config.NoPrivateKey()
+	o := confopt.NoPrivateKey()
 	err = o.UnmarshalText([]byte(path))
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())
@@ -442,8 +488,10 @@ func TestPrivateKeyUnmarshalText(t *testing.T) {
 func TestPrivateKeyFilePermsValid(t *testing.T) {
 	valid_path := "../tls/rsa/key.pem"
 	invalid_path := "../tls/rsa/key_bad_perms.pem"
-	v := config.SomePrivateKey(valid_path)
-	i := config.SomePrivateKey(invalid_path)
+	v, err := confopt.SomePrivateKey(valid_path)
+	assert.NilError(t, err)
+	i, err := confopt.SomePrivateKey(invalid_path)
+	assert.NilError(t, err)
 
 	good, err := v.FilePermsValid()
 	assert.NilError(t, err)
@@ -463,18 +511,21 @@ func TestPrivateKeySetFilePerms(t *testing.T) {
 	defer os.Remove(path)
 	f.Chmod(0666)
 
-	o := config.SomePrivateKey(path)
+	o, err := confopt.SomePrivateKey(path)
+	assert.NilError(t, err)
 	o.SetFilePerms()
 	s, err := f.Stat()
 	assert.NilError(t, err)
-	assert.Equal(t, config.KeyFilePerms, s.Mode())
+	assert.Equal(t, confopt.KeyFilePerms, s.Mode())
 }
 
 func TestPrivateKeyReadCert(t *testing.T) {
 	keyPath := "../tls/rsa/key.pem"
 	certPath := "../tls/rsa/cert.pem"
-	ko := config.SomePrivateKey(keyPath)
-	co := config.SomeCert(certPath)
+	ko, err := confopt.SomePrivateKey(keyPath)
+	assert.NilError(t, err)
+	co, err := confopt.SomeCert(certPath)
+	assert.NilError(t, err)
 
 	key, err := ko.ReadPrivateKey()
 	certificate, err := ko.ReadCert(co)
@@ -507,7 +558,8 @@ func TestPrivateKeyReadCert(t *testing.T) {
 
 func TestPrivateKeyReadPrivateKeyRSA(t *testing.T) {
 	keyPath := "../tls/rsa/key.pem"
-	p := config.SomePrivateKey(keyPath)
+	p, err := confopt.SomePrivateKey(keyPath)
+	assert.NilError(t, err)
 	key, err := p.ReadPrivateKey()
 	assert.NilError(t, err)
 
@@ -521,7 +573,8 @@ func TestPrivateKeyReadPrivateKeyRSA(t *testing.T) {
 func TestPrivateKeyReadPrivateKeyECDSA(t *testing.T) {
 	keyPath := "../tls/ecdsa/key.pem"
 
-	p := config.SomePrivateKey(keyPath)
+	p, err := confopt.SomePrivateKey(keyPath)
+	assert.NilError(t, err)
 	key, err := p.ReadPrivateKey()
 	assert.NilError(t, err)
 
@@ -535,7 +588,8 @@ func TestPrivateKeyReadPrivateKeyECDSA(t *testing.T) {
 func TestPrivateKeyReadPrivateKeyED25519(t *testing.T) {
 	keyPath := "../tls/ed25519/key.pem"
 
-	p := config.SomePrivateKey(keyPath)
+	p, err := confopt.SomePrivateKey(keyPath)
+	assert.NilError(t, err)
 	key, err := p.ReadPrivateKey()
 	assert.NilError(t, err)
 
@@ -549,7 +603,8 @@ func TestPrivateKeyReadPrivateKeyED25519(t *testing.T) {
 func TestPrivateKeyWritePrivateKey(t *testing.T) {
 	// Read in valid certificates (tested above)
 	keyPath := "../tls/rsa/key.pem"
-	c := config.SomePrivateKey(keyPath)
+	c, err := confopt.SomePrivateKey(keyPath)
+	assert.NilError(t, err)
 	key, err := c.ReadPrivateKey()
 	assert.NilError(t, err)
 
@@ -562,7 +617,8 @@ func TestPrivateKeyWritePrivateKey(t *testing.T) {
 	f.Chmod(0666)
 	f.Close()
 
-	tc := config.SomePrivateKey(path)
+	tc, err := confopt.SomePrivateKey(path)
+	assert.NilError(t, err)
 	// Write certificates to new file
 	err = tc.WritePrivateKey(key)
 	assert.NilError(t, err)

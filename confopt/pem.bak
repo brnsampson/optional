@@ -1,4 +1,4 @@
-package config
+package confopt
 
 import (
 	"crypto/tls"
@@ -191,7 +191,7 @@ func (o *Cert) UnmarshalText(text []byte) error {
 	if tmp == "None" || tmp == "none" || tmp == "null" || tmp == "nil" {
 		o.Clear()
 	} else {
-		o.SetVal(tmp)
+		o.Replace(tmp)
 	}
 
 	return nil
@@ -337,7 +337,7 @@ func (o *PubKey) UnmarshalText(text []byte) error {
 	if tmp == "None" || tmp == "none" || tmp == "null" || tmp == "nil" {
 		o.Clear()
 	} else {
-		o.SetVal(tmp)
+		o.Replace(tmp)
 	}
 
 	return nil
@@ -501,7 +501,7 @@ func (o *PrivateKey) UnmarshalText(text []byte) error {
 	if tmp == "None" || tmp == "none" || tmp == "null" || tmp == "nil" {
 		o.Clear()
 	} else {
-		o.SetVal(tmp)
+		o.Replace(tmp)
 	}
 
 	return nil

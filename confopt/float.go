@@ -1,4 +1,4 @@
-package config
+package confopt
 
 import (
 	"github.com/brnsampson/optional"
@@ -56,7 +56,7 @@ func (o *Float32) UnmarshalText(text []byte) error {
 		if err != nil {
 			return err
 		}
-		o.SetVal(float32(i))
+		o.Replace(float32(i))
 	}
 	return nil
 }
@@ -112,7 +112,7 @@ func (o *Float64) UnmarshalText(text []byte) error {
 		if err != nil {
 			return err
 		}
-		o.SetVal(i)
+		o.Replace(i)
 	}
 	return nil
 }

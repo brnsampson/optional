@@ -1,4 +1,4 @@
-package config
+package confopt
 
 import (
 	"github.com/brnsampson/optional"
@@ -55,7 +55,7 @@ func (o *Bool) UnmarshalText(text []byte) error {
 		if err != nil {
 			return err
 		}
-		o.SetVal(i)
+		o.Replace(i)
 	}
 	return nil
 }

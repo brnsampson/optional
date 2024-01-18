@@ -1,4 +1,4 @@
-package config
+package confopt
 
 import (
 	"github.com/brnsampson/optional"
@@ -9,7 +9,7 @@ type primatives interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64 | ~bool | ~string | time.Time
 }
 
-// ConfigOptional is an extension of the Optional interface meant to make it more useful for loading configurations.
+// ConfigOptional is an extension of the Optional interface meant to make it more useful for loading confopturations.
 type ConfigOptional[T primatives] interface {
 	optional.MutableOptional[T]
 

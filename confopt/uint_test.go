@@ -1,7 +1,7 @@
-package config_test
+package confopt_test
 
 import (
-	"github.com/brnsampson/optional/config"
+	"github.com/brnsampson/optional/confopt"
 	"gotest.tools/v3/assert"
 	"reflect"
 	"strconv"
@@ -9,21 +9,21 @@ import (
 )
 
 func TestUintType(t *testing.T) {
-	o := config.SomeUint(42)
+	o := confopt.SomeUint(42)
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
 
 func TestUintString(t *testing.T) {
 	var i uint = 42
 	iStr := strconv.FormatUint(uint64(i), 10)
-	o := config.SomeUint(i)
+	o := confopt.SomeUint(i)
 	assert.Equal(t, iStr, o.String())
 }
 
 func TestUintMarshalText(t *testing.T) {
 	var i uint = 42
 	iStr := strconv.FormatUint(uint64(i), 10)
-	o := config.SomeUint(i)
+	o := confopt.SomeUint(i)
 
 	s, err := o.MarshalText()
 	assert.NilError(t, err)
@@ -37,7 +37,7 @@ func TestUintUnmarshalText(t *testing.T) {
 	s := "this is not a number"
 
 	// Text sucessful unmarshaling
-	o := config.NoUint()
+	o := confopt.NoUint()
 	err := o.UnmarshalText([]byte(iStr))
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())
@@ -57,21 +57,21 @@ func TestUintUnmarshalText(t *testing.T) {
 }
 
 func TestUint8Type(t *testing.T) {
-	o := config.SomeUint8(42)
+	o := confopt.SomeUint8(42)
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
 
 func TestUint8String(t *testing.T) {
 	var i uint8 = 42
 	iStr := strconv.FormatUint(uint64(i), 10)
-	o := config.SomeUint8(i)
+	o := confopt.SomeUint8(i)
 	assert.Equal(t, iStr, o.String())
 }
 
 func TestUint8MarshalText(t *testing.T) {
 	var i uint8 = 42
 	iStr := strconv.FormatUint(uint64(i), 10)
-	o := config.SomeUint8(i)
+	o := confopt.SomeUint8(i)
 
 	s, err := o.MarshalText()
 	assert.NilError(t, err)
@@ -85,7 +85,7 @@ func TestUint8UnmarshalText(t *testing.T) {
 	s := "this is not a number"
 
 	// Text sucessful unmarshaling
-	o := config.NoUint8()
+	o := confopt.NoUint8()
 	err := o.UnmarshalText([]byte(iStr))
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())
@@ -105,21 +105,21 @@ func TestUint8UnmarshalText(t *testing.T) {
 }
 
 func TestUint16Type(t *testing.T) {
-	o := config.SomeUint16(42)
+	o := confopt.SomeUint16(42)
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
 
 func TestUint16String(t *testing.T) {
 	var i uint16 = 42
 	iStr := strconv.FormatUint(uint64(i), 10)
-	o := config.SomeUint16(i)
+	o := confopt.SomeUint16(i)
 	assert.Equal(t, iStr, o.String())
 }
 
 func TestUint16MarshalText(t *testing.T) {
 	var i uint16 = 42
 	iStr := strconv.FormatUint(uint64(i), 10)
-	o := config.SomeUint16(i)
+	o := confopt.SomeUint16(i)
 
 	s, err := o.MarshalText()
 	assert.NilError(t, err)
@@ -133,7 +133,7 @@ func TestUint16UnmarshalText(t *testing.T) {
 	s := "this is not a number"
 
 	// Text sucessful unmarshaling
-	o := config.NoUint16()
+	o := confopt.NoUint16()
 	err := o.UnmarshalText([]byte(iStr))
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())
@@ -153,21 +153,21 @@ func TestUint16UnmarshalText(t *testing.T) {
 }
 
 func TestUint32Type(t *testing.T) {
-	o := config.SomeUint32(42)
+	o := confopt.SomeUint32(42)
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
 
 func TestUint32String(t *testing.T) {
 	var f uint32 = 42
 	fStr := strconv.FormatUint(uint64(f), 10)
-	o := config.SomeUint32(f)
+	o := confopt.SomeUint32(f)
 	assert.Equal(t, fStr, o.String())
 }
 
 func TestUint32MarshalText(t *testing.T) {
 	var f uint32 = 42
 	fStr := strconv.FormatUint(uint64(f), 10)
-	o := config.SomeUint32(f)
+	o := confopt.SomeUint32(f)
 
 	s, err := o.MarshalText()
 	assert.NilError(t, err)
@@ -181,7 +181,7 @@ func TestUint32UnmarshalText(t *testing.T) {
 	s := "this is not a number"
 
 	// Text sucessful unmarshaling
-	o := config.NoUint32()
+	o := confopt.NoUint32()
 	err := o.UnmarshalText([]byte(iStr))
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())
@@ -201,21 +201,21 @@ func TestUint32UnmarshalText(t *testing.T) {
 }
 
 func TestUint64Type(t *testing.T) {
-	o := config.SomeUint64(42)
+	o := confopt.SomeUint64(42)
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
 
 func TestUint64String(t *testing.T) {
 	var i uint64 = 42
 	iStr := strconv.FormatUint(uint64(i), 10)
-	o := config.SomeUint64(i)
+	o := confopt.SomeUint64(i)
 	assert.Equal(t, iStr, o.String())
 }
 
 func TestUint64MarshalText(t *testing.T) {
 	var i uint64 = 42
 	iStr := strconv.FormatUint(uint64(i), 10)
-	o := config.SomeUint64(i)
+	o := confopt.SomeUint64(i)
 
 	s, err := o.MarshalText()
 	assert.NilError(t, err)
@@ -229,7 +229,7 @@ func TestUint64UnmarshalText(t *testing.T) {
 	s := "this is not a number"
 
 	// Text sucessful unmarshaling
-	o := config.NoUint64()
+	o := confopt.NoUint64()
 	err := o.UnmarshalText([]byte(iStr))
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())

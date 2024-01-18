@@ -1,8 +1,9 @@
-package config_test
+package confopt_test
 
 import (
 	"encoding/json"
-	"github.com/brnsampson/optional/config"
+	"github.com/brnsampson/optional"
+	"github.com/brnsampson/optional/confopt"
 	"gotest.tools/v3/assert"
 	"reflect"
 	"slices"
@@ -11,21 +12,21 @@ import (
 )
 
 func TestTimeType(t *testing.T) {
-	o := config.SomeTime(time.Now())
+	o := confopt.SomeTime(time.Now())
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
 
 func TestTimeString(t *testing.T) {
 	now := time.Now().Truncate(0)
 	nowString := now.Format(time.RFC3339Nano)
-	o := config.SomeTime(now).WithFormats(time.RFC3339Nano)
+	o := confopt.SomeTime(now).WithFormats(time.RFC3339Nano)
 	assert.Equal(t, nowString, o.String())
 }
 
 func TestTimeMarshalText(t *testing.T) {
 	now := time.Now().Truncate(0)
 	nowString := now.Format(time.RFC3339Nano)
-	o := config.SomeTime(now).WithFormats(time.RFC3339Nano)
+	o := confopt.SomeTime(now).WithFormats(time.RFC3339Nano)
 	s, err := o.MarshalText()
 	assert.NilError(t, err)
 	assert.Equal(t, nowString, string(s))
@@ -38,7 +39,7 @@ func TestTimeUnmarshalText(t *testing.T) {
 	later := now.Add(wait)
 
 	// Text sucessful unmarshaling
-	o := config.NoTime().WithFormats(time.RFC3339Nano)
+	o := confopt.NoTime().WithFormats(time.RFC3339Nano)
 	err := o.UnmarshalText([]byte(nowString))
 	assert.NilError(t, err)
 
@@ -68,7 +69,7 @@ func TestTimeMarshalJson(t *testing.T) {
 	nowString := now.Format(time.RFC3339Nano)
 	nowJson := "\"" + nowString + "\""
 
-	o := config.SomeTime(now).WithFormats(time.RFC3339Nano)
+	o := confopt.SomeTime(now).WithFormats(time.RFC3339Nano)
 	res, err := json.Marshal(o)
 	assert.NilError(t, err)
 	assert.Equal(t, nowJson, string(res))
@@ -86,22 +87,21 @@ func TestTimeUnmarshalJson(t *testing.T) {
 	nowUnixJson := "\"" + nowUnixString + "\""
 
 	// Text null case
-	var n config.Time
-	expected := config.NoTime()
+	var n confopt.Time
+	expected := confopt.NoTime()
 	expectedFormats := expected.Formats()
 	json.Unmarshal(nullJson, &n)
 
-	// Need to test == instead of expected.Eq(&n) because there is some additional state in the Time struct in addition
-	// to the embedded Option.
+	// Need to test both optional.Equal(expected, n) and that the format slice is the same.
 	assert.Assert(t, n.IsNone())
-	assert.Assert(t, expected.Eq(&n))
+	assert.Assert(t, optional.Equal(expected, n))
 	formats := n.Formats()
 	for _, f := range expectedFormats {
 		assert.Assert(t, slices.Contains(formats, f))
 	}
 
 	// Test valid case
-	var o config.Time
+	var o confopt.Time
 	err := json.Unmarshal([]byte(nowJson), &o)
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())
@@ -111,11 +111,11 @@ func TestTimeUnmarshalJson(t *testing.T) {
 	assert.Equal(t, now, res)
 
 	// Test invalid data case
-	var p config.Time
+	var p confopt.Time
 	err = json.Unmarshal([]byte(nowUnixJson), &p)
 	assert.Assert(t, err != nil)
 
-	var q config.Time
+	var q confopt.Time
 	err = json.Unmarshal([]byte("this is not a date"), &q)
 	assert.Assert(t, err != nil)
 }

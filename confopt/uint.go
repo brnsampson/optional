@@ -1,4 +1,4 @@
-package config
+package confopt
 
 import (
 	"github.com/brnsampson/optional"
@@ -56,7 +56,7 @@ func (o *Uint) UnmarshalText(text []byte) error {
 		if err != nil {
 			return err
 		}
-		o.SetVal(uint(i))
+		o.Replace(uint(i))
 	}
 	return nil
 }
@@ -112,7 +112,7 @@ func (o *Uint8) UnmarshalText(text []byte) error {
 		if err != nil {
 			return err
 		}
-		o.SetVal(uint8(i))
+		o.Replace(uint8(i))
 	}
 	return nil
 }
@@ -168,7 +168,7 @@ func (o *Uint16) UnmarshalText(text []byte) error {
 		if err != nil {
 			return err
 		}
-		o.SetVal(uint16(i))
+		o.Replace(uint16(i))
 	}
 	return nil
 }
@@ -224,7 +224,7 @@ func (o *Uint32) UnmarshalText(text []byte) error {
 		if err != nil {
 			return err
 		}
-		o.SetVal(uint32(i))
+		o.Replace(uint32(i))
 	}
 	return nil
 }
@@ -280,7 +280,7 @@ func (o *Uint64) UnmarshalText(text []byte) error {
 		if err != nil {
 			return err
 		}
-		o.SetVal(i)
+		o.Replace(i)
 	}
 	return nil
 }

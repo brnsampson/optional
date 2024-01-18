@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/brnsampson/optional/config"
+	"github.com/brnsampson/optional/confopt"
 	"github.com/charmbracelet/log"
 )
 
@@ -13,14 +13,18 @@ const (
 
 var (
 	debug bool
+	dev bool
+	DEV_HOST = confopt.SomeStr("127.0.0.1")
+	DEV_PORT = confopt.SomeInt(8088)
 )
 
 func main() {
-	confPath := config.SomeStr(DEFAULT_FLAG_CONFIG)
-	host := config.NoStr()
-	port := config.NoInt()
+	confPath := confopt.SomeStr(DEFAULT_FLAG_CONFIG)
+	host := confopt.NoStr()
+	port := confopt.NoInt()
 	flag.BoolVar(&debug, "debug", false, "set logging level to debug")
-	flag.Var(&confPath, "config", "path to config file. Set to `none` to disable loading from config.")
+	flag.BoolVar(&dev, "dev", false, "Set default values appropriate for local development")
+	flag.Var(&confPath, "confopt", "path to confopt file. Set to `none` to disable loading from confopt.")
 	flag.Var(&host, "host", "hostname for a server or whatever")
 	flag.Var(&port, "port", "port for a server or whatever")
 	flag.Parse()
@@ -30,33 +34,37 @@ func main() {
 	}
 
 	sl := NewSubConfigLoader().WithPort(port)
-	flagConf := NewConfigLoader().WithHost(host).WithNested(sl)
+	flagConf := NewConfigLoader().WithHost(host)
 
-	log.Debug("Loaded sub config loader from flags", "config", sl)
-	log.Debug("Loaded config loader from flags", "config", flagConf)
-
-	// You COULD just do this... but I want to show how something would reload the config at runtime if you were listening
-	// to a SIGINT, for example
-	//loader, err := LoadedConfigLoader(confPath, flagConf)
-	//if err != nil {
-	//	fmt.Println(err)
-	//    panic("Error while loading config!")
-	//}
-
-	loader := NewConfigLoader().WithConfigPath(confPath)
-	loader.Reload(flagConf)
-
-	conf, err := loader.Finalize()
-	if err != nil {
-		fmt.Println(err)
-		panic("Error while finalizing config!")
+	if dev {
+		sl = sl.WithPort(DEV_PORT)
+		flagConf = flagConf.WithHost(DEV_HOST)
 	}
 
-	// We have a static config! Easy, right?!?! ...right?
+	flagConf = flagConf.WithNested(sl)
+
+	log.Debug("Loaded sub confopt loader from flags", "confopt", sl)
+	log.Debug("Loaded confopt loader from flags", "confopt", flagConf)
+
+
+	config, err := NewConfig(flagConf)
+	if err != nil {
+		fmt.Println(err)
+		panic("Error while finalizing the config!")
+	}
+
+	// Reload with config.Reload()
+	err = config.Reload()
+	if err != nil {
+		fmt.Println(err)
+		panic("Error while reloading config!")
+	}
+
+	// We have a reloadable config! Easy, right?!?! ...right?
 	fmt.Println("")
 	fmt.Println("I loaded a config and my name is:")
-	fmt.Println(conf.Host)
+	fmt.Println(config.Host)
 	fmt.Println("")
 	fmt.Println("And my port is:")
-	fmt.Println(conf.Nested.Port)
+	fmt.Println(config.Nested.Port)
 }
