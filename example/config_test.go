@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"github.com/brnsampson/optional"
 	"github.com/brnsampson/optional/confopt"
 	main "github.com/brnsampson/optional/example"
 	"gotest.tools/v3/assert"
@@ -51,7 +52,7 @@ func TestSubConfigLoaderMerge(t *testing.T) {
 
 	expected := main.SubConfigLoader{port1Option}
 	res := scl1.Merged(scl2)
-	assert.Assert(t, expected.Port.Eq(res.Port))
+	assert.Assert(t, optional.Equal(expected.Port, res.Port))
 }
 
 func TestConfigBuilderPieces(t *testing.T) {
@@ -100,5 +101,5 @@ func TestConfigLoaderMerge(t *testing.T) {
 
 	expected := main.ConfigLoader{confopt.NoStr(), host1Option, scl1}
 	res := sc1.Merged(sc2)
-	assert.Assert(t, expected.Host.Eq(res.Host))
+	assert.Assert(t, optional.Equal(expected.Host, res.Host))
 }

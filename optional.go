@@ -127,7 +127,7 @@ func GetOr[T comparable](opt Optional[T], val T) T {
 
 // GetOrElse calls Get(), but run the passed function and return the result instead of producing an error if the option
 // is None.
-func GetOrElse[T comparable](opt Option[T], f func() T) T {
+func GetOrElse[T comparable](opt Optional[T], f func() T) T {
 	res, err := opt.Get()
 	if err != nil {
 		return f()
