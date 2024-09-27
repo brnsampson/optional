@@ -18,19 +18,19 @@ import (
 // is what this library was created to avoid in the first place!)
 type Option[T comparable] struct {
 	inner T
-	none  bool
+	some  bool
 }
 
 // Some returns an Option with an inferred type and specified value.
 func Some[T comparable](value T) Option[T] {
-	return Option[T]{inner: value, none: false}
+	return Option[T]{inner: value, some: true}
 }
 
 // None returns an Option with no value loaded. Note that since there is no value to infer type from, None must be
 // instanciated with the desired type like optional.None[string]().
 func None[T comparable]() Option[T] {
 	var tmp T
-	return Option[T]{inner: tmp, none: true}
+	return Option[T]{inner: tmp, some: false}
 }
 
 // FromPointer creates an option with an inferred type from a pointer. nil pointers are mapped to a None value and non-nil
@@ -45,39 +45,39 @@ func FromPointer[T comparable](p *T) Option[T] {
 }
 
 func (o Option[T]) IsSome() bool {
-	return !o.none
+	return o.some
 }
 
 func (o Option[T]) IsNone() bool {
-	return o.none
+	return !o.some
 }
 
 // Clone creates a copy of the Option by value. This means the new Option may be unwrapped or modified without affecting
 // the old Option. NOTE: the exception to this would be if you create an Option for a pointer type. Because the pointer
 // is copied by value, it will still refer to the same value.
 func (o Option[T]) Clone() Optional[T] {
-	if o.none {
-		return None[T]()
-	} else {
+	if o.some {
 		return Some(o.inner)
+	} else {
+		return None[T]()
 	}
 }
 
 // MutableClone creates a copy of the Option by value the same as Clone. The only differnce is that the returned type
 // is a pointer cast as a MutableOptional so that the returned value can be further modified.
 func (o Option[T]) MutableClone() MutableOptional[T] {
-	if o.none {
-		tmp := None[T]()
+	if o.some {
+		tmp := Some(o.inner)
 		return &tmp
 	} else {
-		tmp := Some(o.inner)
+		tmp := None[T]()
 		return &tmp
 	}
 }
 
 // Clear converts a Some(x) or None type Option into a None value.
 func (o *Option[T]) Clear() {
-	o.none = true
+	o.some = false
 }
 
 // Replace converts a Some(x) or None type Option into a Some(value) value.
@@ -86,7 +86,7 @@ func (o *Option[T]) Clear() {
 func (o *Option[T]) Replace(value T) (Optional[T], error) {
 	tmp, err := o.Get()
 	o.inner = value
-	o.none = false
+	o.some = true
 
 	if err != nil {
 		// it was None
@@ -94,7 +94,6 @@ func (o *Option[T]) Replace(value T) (Optional[T], error) {
 	} else {
 		return Some(tmp), nil
 	}
-
 }
 
 // Get returns the current wrapped value of a Some value Option and returns an error if the Option is None.
@@ -107,10 +106,10 @@ func (o Option[T]) Get() (T, error) {
 
 // Match tests if the inner value of Option == the passed value
 func (o Option[T]) Match(probe T) bool {
-	if o.none {
-		return false
-	} else {
+	if o.some {
 		return o.inner == probe
+	} else {
+		return false
 	}
 }
 
@@ -155,7 +154,8 @@ func (o *Option[T]) UnmarshalJSON(data []byte) error {
 
 	if tmp2 != nil {
 		// According to the spec, this should be nil if we recieved a json null, but I've found that you
-		// actually will get a valid pointer going to the zero value.
+		// actually will get a valid pointer going to the zero value. This unfortunately means we have no
+		// good way to determine if the original json value was null, which is why we checked the string earlier.
 		o.Replace(*tmp2)
 	} else {
 		o.Clear()

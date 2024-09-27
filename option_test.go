@@ -3,12 +3,19 @@ package optional_test
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/brnsampson/optional"
-	"gotest.tools/v3/assert"
 	"slices"
 	"strconv"
 	"testing"
+
+	"github.com/brnsampson/optional"
+	"gotest.tools/v3/assert"
 )
+
+func TestOptionZeroValueIsNone(t *testing.T) {
+	var o optional.Option[int]
+	assert.Assert(t, o.IsNone())
+	assert.Assert(t, !o.IsSome())
+}
 
 func TestOptionPointerIsMutableOptional(t *testing.T) {
 	// The real test is if we get compiler errors because &o does not implement Optional
