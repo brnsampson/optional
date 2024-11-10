@@ -1,21 +1,23 @@
-package confopt
+package file
 
 import (
 	"io/fs"
 	"os"
 	"path/filepath"
+
+	"github.com/brnsampson/optional"
 )
 
 type File struct {
-	Str
+	optional.Str
 }
 
 func SomeFile(path string) File {
-	return File{SomeStr(path)}
+	return File{optional.SomeStr(path)}
 }
 
 func NoFile() File {
-	return File{NoStr()}
+	return File{optional.NoStr()}
 }
 
 // Overrides Option.Match to account for relative paths potentially being different strings but representing the same file.
@@ -61,7 +63,6 @@ func (o File) String() string {
 		return tmp
 	}
 }
-
 
 func (o File) Abs() (opt File, err error) {
 	path, err := o.Get()

@@ -1,18 +1,16 @@
-package confopt
+package optional
 
-import "github.com/brnsampson/optional"
-
-// Str implements ConfigOptional and Optional for the string type.
+// Str implements Configand for the string type.
 type Str struct {
-	optional.Option[string]
+	Option[string]
 }
 
 func SomeStr(value string) Str {
-	return Str{optional.Some(value)}
+	return Str{Some(value)}
 }
 
 func NoStr() Str {
-	return Str{optional.None[string]()}
+	return Str{None[string]()}
 }
 
 func (o Str) Type() string {

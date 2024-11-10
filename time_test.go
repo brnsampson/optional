@@ -1,32 +1,32 @@
-package confopt_test
+package optional_test
 
 import (
 	"encoding/json"
-	"github.com/brnsampson/optional"
-	"github.com/brnsampson/optional/confopt"
-	"gotest.tools/v3/assert"
 	"reflect"
 	"slices"
 	"testing"
 	"time"
+
+	"github.com/brnsampson/optional"
+	"gotest.tools/v3/assert"
 )
 
 func TestTimeType(t *testing.T) {
-	o := confopt.SomeTime(time.Now())
+	o := optional.SomeTime(time.Now())
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
 
 func TestTimeString(t *testing.T) {
 	now := time.Now().Truncate(0)
 	nowString := now.Format(time.RFC3339Nano)
-	o := confopt.SomeTime(now).WithFormats(time.RFC3339Nano)
+	o := optional.SomeTime(now).WithFormats(time.RFC3339Nano)
 	assert.Equal(t, nowString, o.String())
 }
 
 func TestTimeMarshalText(t *testing.T) {
 	now := time.Now().Truncate(0)
 	nowString := now.Format(time.RFC3339Nano)
-	o := confopt.SomeTime(now).WithFormats(time.RFC3339Nano)
+	o := optional.SomeTime(now).WithFormats(time.RFC3339Nano)
 	s, err := o.MarshalText()
 	assert.NilError(t, err)
 	assert.Equal(t, nowString, string(s))
@@ -39,7 +39,7 @@ func TestTimeUnmarshalText(t *testing.T) {
 	later := now.Add(wait)
 
 	// Text sucessful unmarshaling
-	o := confopt.NoTime().WithFormats(time.RFC3339Nano)
+	o := optional.NoTime().WithFormats(time.RFC3339Nano)
 	err := o.UnmarshalText([]byte(nowString))
 	assert.NilError(t, err)
 
@@ -69,7 +69,7 @@ func TestTimeMarshalJson(t *testing.T) {
 	nowString := now.Format(time.RFC3339Nano)
 	nowJson := "\"" + nowString + "\""
 
-	o := confopt.SomeTime(now).WithFormats(time.RFC3339Nano)
+	o := optional.SomeTime(now).WithFormats(time.RFC3339Nano)
 	res, err := json.Marshal(o)
 	assert.NilError(t, err)
 	assert.Equal(t, nowJson, string(res))
@@ -81,14 +81,14 @@ func TestTimeUnmarshalJson(t *testing.T) {
 	nowJson := "\"" + nowString + "\""
 	nullJson := []byte(`null`)
 
-	//wait := 10 * time.Second
-	//later := now.Add(wait)
+	// wait := 10 * time.Second
+	// later := now.Add(wait)
 	nowUnixString := now.Format(time.UnixDate)
 	nowUnixJson := "\"" + nowUnixString + "\""
 
 	// Text null case
-	var n confopt.Time
-	expected := confopt.NoTime()
+	var n optional.Time
+	expected := optional.NoTime()
 	expectedFormats := expected.Formats()
 	json.Unmarshal(nullJson, &n)
 
@@ -101,7 +101,7 @@ func TestTimeUnmarshalJson(t *testing.T) {
 	}
 
 	// Test valid case
-	var o confopt.Time
+	var o optional.Time
 	err := json.Unmarshal([]byte(nowJson), &o)
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())
@@ -111,11 +111,11 @@ func TestTimeUnmarshalJson(t *testing.T) {
 	assert.Equal(t, now, res)
 
 	// Test invalid data case
-	var p confopt.Time
+	var p optional.Time
 	err = json.Unmarshal([]byte(nowUnixJson), &p)
 	assert.Assert(t, err != nil)
 
-	var q confopt.Time
+	var q optional.Time
 	err = json.Unmarshal([]byte("this is not a date"), &q)
 	assert.Assert(t, err != nil)
 }

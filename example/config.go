@@ -1,251 +1,223 @@
 package main
 
 import (
+	"encoding/json"
+	"flag"
+	"log/slog"
+	"strconv"
+
 	"github.com/BurntSushi/toml"
 	"github.com/brnsampson/optional"
-	"github.com/brnsampson/optional/confopt"
+	"github.com/brnsampson/optional/file"
 	"github.com/caarlos0/env"
-	"github.com/charmbracelet/log"
-	"os"
-	"path/filepath"
 )
 
 const (
-	DEFAULT_HOST string = "localhost"
-	DEFAULT_PORT int    = 1443
+	DEFAULT_CONFIG_FILE = "conf.toml"
+	DEFAULT_DEV_MODE    = false
+	DEFAULT_LOG_LEVEL   = "info"
+	DEFAULT_HOST        = "localhost"
+	DEFAULT_IP          = "127.0.0.1"
+	DEFAULT_PORT        = 1443
 )
 
-// Static and reloadable configs
+var (
+	// Loader flags
+	dev      bool
+	confFile file.File = file.SomeFile(DEFAULT_CONFIG_FILE) // Setting a default value for an optional
+	host     optional.Str
+	logLevel optional.Str
+	// subLoader flags
+	ip   optional.Str
+	port optional.Int
+)
 
+func setupFlags() {
+	// Set up all of our command line flags here to make sure we don't have config scattered across
+	// the whole world.
+
+	// Loader
+	flag.BoolVar(&dev, "dev", false, "Set default values appropriate for local development")
+	flag.Var(&logLevel, "log", "set logging level [debug, info, warn, err]. Defaults to info.")
+	flag.Var(&confFile, "config", "path to optional config file. Set to `none` to disable file loading entirely.")
+	flag.Var(&host, "host", "hostname for a server or whatever")
+
+	// subLoader
+	flag.Var(&ip, "ip", "ip address for a server or whatever")
+	flag.Var(&port, "port", "port for a server or whatever")
+}
+
+// Static and reloadable configs
 type staticSubConfig struct {
+	IP   string
 	Port int
 }
 
-// This is just an example of how you would implement an interface that is then carried over to your SubConfig. More likely,
-// you would have config fields for Host and Port and expose a method like GetAddr().
-func (c staticSubConfig) GetPort() int {
-	return c.Port
+// If you has a module in your code that only needed this fragment of the config, you could add convenience
+// methods to it like this:
+func (c staticSubConfig) GetAddr() string {
+	return c.IP + ":" + strconv.Itoa(c.Port)
 }
 
 type staticConfig struct {
-	Host   string
-	Nested staticSubConfig
+	ConfigFile string
+	DevMode    bool
+	LogLevel   slog.Level
+	Host       string
+	SubConfig  staticSubConfig
 }
 
-type SubConfig struct {
-	staticSubConfig
-	loader *ConfigLoader
+type subLoader struct {
+	IP   optional.Str `env:"IP"`
+	Port optional.Int `env:"PORT"`
 }
 
-func (c *SubConfig) Reload() error {
-	l, err := c.loader.WithReload()
-	if err != nil {
+func newSubLoader() subLoader {
+	// These vars are defined at the top of the file globally and added to the flags in an init() funciton.
+	// ip := optional.NoStr()
+	// port := optional.NoInt()
+
+	// fset := flag.NewFlagSet("subLoader", flag.ContinueOnError)
+	// fset.Var(&ip, "ip", "ip address for a server or whatever")
+	// fset.Var(&port, "port", "port for a server or whatever")
+
+	// err := fset.Parse()
+	return subLoader{IP: ip, Port: port}
+}
+
+func (l subLoader) Name() string {
+	return "subLoader"
+}
+
+func (l *subLoader) ToStatic() (staticSubConfig, error) {
+	return staticSubConfig{
+		IP:   optional.GetOr(l.IP, DEFAULT_IP),
+		Port: optional.GetOr(l.Port, DEFAULT_PORT),
+	}, nil
+}
+
+type Loader struct {
+	ConfigFile file.File    `env:"CONFIG_FILE"`
+	DevMode    bool         `env:"DEV_MODE"`
+	LogLevel   optional.Str `env:"LOG_LEVEL"`
+	Host       optional.Str `env:"HOST"`
+	SubLoader  subLoader
+	current    staticConfig
+}
+
+func NewLoader() Loader {
+	subLoader := newSubLoader()
+
+	// fset := flag.NewFlagSet("loader", flag.ContinueOnError)
+	// confPath := optional.SomeStr(DEFAULT_CONFIG_PATH)
+	// host := optional.NoStr()
+	// fset.Var(&confPath, "optional", "path to optional file. Set to `none` to disable loading from optional.")
+	// fset.Var(&host, "host", "hostname for a server or whatever")
+	// flag.Parse()
+
+	return Loader{
+		ConfigFile: confFile,
+		DevMode:    dev,
+		LogLevel:   logLevel,
+		Host:       host,
+		SubLoader:  subLoader,
+		current:    staticConfig{},
+	}
+}
+
+func (l Loader) Name() string {
+	return "Loader"
+}
+
+func (l Loader) Current() staticConfig {
+	return l.current
+}
+
+func (l *Loader) Update(configFile string) error {
+	if configFile != "" {
+		l.ConfigFile.Set(configFile)
+	}
+
+	if err := env.Parse(l); err != nil {
 		return err
 	}
 
-	static, err := l.Finalize()
+	pretty, err := json.Marshal(l)
 	if err != nil {
-		return err
+		slog.Error("Failed to print current state of loader... Does it contain a non-marshallable type?")
+	} else {
+		slog.Debug("Loaded env vars", "loader", string(pretty))
 	}
 
-	c.staticSubConfig = static.Nested
-	return nil
-}
+	if l.ConfigFile.IsSome() {
+		abs, err := l.ConfigFile.Abs()
+		if err != nil {
+			slog.Error(
+				"Could not retrieve config file absolute file path from loader",
+				slog.Any("path", abs),
+				slog.Any("state", l),
+				slog.Any("error", err),
+			)
+			return err
+		}
 
-type Config struct {
-	staticConfig
-	loader *ConfigLoader
-}
+		path, err := abs.Get()
+		if err != nil {
+			slog.Error(
+				"Could not retrieve absolute file path from loader",
+				slog.String("path", path),
+				slog.Any("state", l),
+				slog.Any("error", err),
+			)
+			return err
+		}
 
-func NewConfig(loader ConfigLoader) (conf Config, err error) {
-	l, err := loader.WithReload()
-	if err != nil {
-		return
-	}
-
-	static, err := l.Finalize()
-	if err != nil {
-		return
-	}
-
-	return Config{static, &loader}, err
-}
-
-func (c *Config) Reload() error {
-	l, err := c.loader.WithReload()
-	if err != nil {
-		return err
-	}
-
-	static, err := l.Finalize()
-	if err != nil {
-		return err
-	}
-
-	c.staticConfig = static
-	return nil
-}
-
-// Loaders here.
-type SubConfigLoader struct {
-	Port confopt.Int `env:"PORT"`
-}
-
-type ConfigLoader struct {
-	ConfigPath confopt.Str `env:"CONFIG_FILE"`
-	Host       confopt.Str `env:"HOST"`
-	Nested     SubConfigLoader
-}
-
-func NewSubConfigLoader() SubConfigLoader {
-	return SubConfigLoader{confopt.NoInt()}
-}
-
-func NewConfigLoader() ConfigLoader {
-	return ConfigLoader{confopt.NoStr(), confopt.NoStr(), NewSubConfigLoader()}
-}
-
-func configLoaderFromEnv() (loader ConfigLoader, err error) {
-	loader = NewConfigLoader()
-
-	if err = env.Parse(&loader); err != nil {
-		log.Error("Failed to load server confopt from env variables!")
-		return
-	}
-
-	if err = env.Parse(&loader.Nested); err != nil {
-		log.Error("Failed to load sub-config loader from env variables!")
-		return
-	}
-
-	log.Debug("Loaded server confopt loader from env variables", "confopt", loader)
-	return
-}
-
-func configLoaderFromFile(pathOpt confopt.Str) (loader ConfigLoader, err error) {
-	loader = NewConfigLoader()
-
-	// Short-circuit and return default loader if no path was given.
-	path, err := pathOpt.Get()
-	if err != nil {
-		log.Debug("config file path was None. Skipping...")
-		return loader, nil
-	}
-
-	// try to make it work if the user is in the project root or example directory
-	tmp := path
-	path = "./" + path
-	if _, err = os.Stat(path); err != nil {
-		path = "./example/" + tmp
-		if _, err = os.Stat(path); err != nil {
-			return
+		_, err = toml.DecodeFile(path, l)
+		if err != nil {
+			slog.Error(
+				"Could not decode file into FullLoader",
+				slog.String("path", path),
+				slog.Any("state", l),
+				slog.Any("error", err),
+			)
+			return err
 		}
 	}
 
-	abs, err := filepath.Abs(path)
+	l.current, err = l.ToStatic()
+	return err
+}
+
+func (l Loader) ToStatic() (staticConfig, error) {
+	subconfig, err := l.SubLoader.ToStatic()
 	if err != nil {
-		return
+		slog.Error("Failed loading sub-component", "component", l.SubLoader.Name())
 	}
 
-	_, err = toml.DecodeFile(abs, &loader)
-	if err != nil {
-		return
+	// Sometimes you have to do some logic on a value. Another great example would be reading TLS
+	// certificates or signing keys.
+	ll := l.LogLevel
+	var level slog.Level
+	if ll.Match("debug") || ll.Match("Debug") {
+		level = slog.LevelDebug
+	} else if ll.Match("warn") || ll.Match("Warn") || ll.Match("warning") || ll.Match("Warning") {
+		level = slog.LevelWarn
+	} else if ll.Match("err") || ll.Match("Err") || ll.Match("error") || ll.Match("Error") {
+		level = slog.LevelError
+	} else {
+		level = slog.LevelInfo
 	}
 
-	loader = loader.WithConfigPath(confopt.SomeStr(abs))
-
-	log.Debug("Loaded server confopt from file", "filename", abs, "confopt", loader)
-
-	return
-}
-
-// SubConfigLoader methods
-func (l SubConfigLoader) WithPort(port confopt.Int) SubConfigLoader {
-	l.Port = optional.Or(port, l.Port)
-	return l
-}
-
-func (l SubConfigLoader) OrPort(port confopt.Int) SubConfigLoader {
-	l.Port = optional.Or(l.Port, port)
-	return l
-}
-
-func (l SubConfigLoader) Merged(other SubConfigLoader) SubConfigLoader {
-	return l.OrPort(other.Port)
-}
-
-func (l SubConfigLoader) Finalize() (staticSubConfig, error) {
-	port := optional.GetOr(l.Port, DEFAULT_PORT)
-	conf := staticSubConfig{port}
-	log.Info("Finalized static subconfig from SubConfigLoader", "config", conf)
-	return conf, nil
-}
-
-// Now for the main config loader
-func loadedConfigLoader(override optional.Option[ConfigLoader]) (loader ConfigLoader, err error) {
-	loader = optional.GetOrElse(override, NewConfigLoader)
-	file, err := configLoaderFromFile(loader.ConfigPath)
-	if err != nil {
-		return
-	}
-	loader = loader.Merged(file)
-
-	env, err := configLoaderFromEnv()
-	if err != nil {
-		return
-	}
-	loader = loader.Merged(env)
-	log.Info("Loaded server config from all sources", "filename", loader.ConfigPath, "loader_state", loader)
-
-	return
-}
-
-func (l ConfigLoader) AsOption() optional.Option[ConfigLoader] {
-	return optional.Some(l)
-}
-
-func (l ConfigLoader) WithConfigPath(path confopt.Str) ConfigLoader {
-	l.ConfigPath = optional.Or(path, l.ConfigPath)
-	return l
-}
-
-func (l ConfigLoader) OrConfigPath(path confopt.Str) ConfigLoader {
-	l.ConfigPath = optional.Or(l.ConfigPath, path)
-	return l
-}
-
-func (l ConfigLoader) WithHost(host confopt.Str) ConfigLoader {
-	l.Host = optional.Or(host, l.Host)
-	return l
-}
-
-func (l ConfigLoader) OrHost(host confopt.Str) ConfigLoader {
-	l.Host = optional.Or(l.Host, host)
-	return l
-}
-
-func (l ConfigLoader) WithNested(nested SubConfigLoader) ConfigLoader {
-	l.Nested = nested
-	return l
-}
-
-func (l ConfigLoader) Merged(other ConfigLoader) ConfigLoader {
-	return l.OrConfigPath(other.ConfigPath).OrHost(other.Host).WithNested(l.Nested.Merged(other.Nested))
-}
-
-func (l ConfigLoader) Finalize() (config staticConfig, err error) {
-	host := optional.GetOr(l.Host, DEFAULT_HOST)
-	nested, err := l.Nested.Finalize()
-	if err != nil {
-		log.Error("Failed to finalize config from config loader!")
-		return
+	// DevMode overrides
+	if l.DevMode {
+		level = slog.LevelDebug
 	}
 
-	config = staticConfig{host, nested}
-	log.Info("Finalized server config", "config", config)
-	return config, nil
-}
-
-func (l ConfigLoader) WithReload() (loader ConfigLoader, err error) {
-	return loadedConfigLoader(l.AsOption())
+	return staticConfig{
+		ConfigFile: optional.GetOr(l.ConfigFile, DEFAULT_CONFIG_FILE),
+		DevMode:    l.DevMode,
+		LogLevel:   level,
+		Host:       optional.GetOr(l.Host, DEFAULT_HOST),
+		SubConfig:  subconfig,
+	}, nil
 }

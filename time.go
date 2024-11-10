@@ -1,15 +1,14 @@
-package confopt
+package optional
 
 import (
 	"encoding/json"
-	"github.com/brnsampson/optional"
 	"time"
 )
 
 const DEFAULT_TIME_FORMAT string = time.RFC3339
 
 type Time struct {
-	optional.Option[time.Time]
+	Option[time.Time]
 	formats []string
 }
 
@@ -17,14 +16,14 @@ func SomeTime(value time.Time, formats ...string) Time {
 	if len(formats) == 0 {
 		formats = append(formats, DEFAULT_TIME_FORMAT)
 	}
-	return Time{optional.Some(value), formats}
+	return Time{Some(value), formats}
 }
 
 func NoTime(formats ...string) Time {
 	if len(formats) == 0 {
 		formats = append(formats, DEFAULT_TIME_FORMAT)
 	}
-	return Time{optional.None[time.Time](), formats}
+	return Time{None[time.Time](), formats}
 }
 
 func (o Time) WithFormats(formats ...string) Time {

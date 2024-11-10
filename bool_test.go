@@ -1,26 +1,27 @@
-package confopt_test
+package optional_test
 
 import (
-	"github.com/brnsampson/optional/confopt"
-	"gotest.tools/v3/assert"
 	"reflect"
 	"testing"
+
+	"github.com/brnsampson/optional"
+	"gotest.tools/v3/assert"
 )
 
 func TestBoolType(t *testing.T) {
-	o := confopt.SomeBool(true)
+	o := optional.SomeBool(true)
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
 
 func TestBoolString(t *testing.T) {
 	trueString := "true"
-	o := confopt.SomeBool(true)
+	o := optional.SomeBool(true)
 	assert.Equal(t, trueString, o.String())
 }
 
 func TestBoolMarshalText(t *testing.T) {
 	trueString := "true"
-	o := confopt.SomeBool(true)
+	o := optional.SomeBool(true)
 
 	s, err := o.MarshalText()
 	assert.NilError(t, err)
@@ -33,7 +34,7 @@ func TestBoolUnmarshalText(t *testing.T) {
 	intString := "42"
 
 	// Text sucessful unmarshaling
-	o := confopt.NoBool()
+	o := optional.NoBool()
 	err := o.UnmarshalText([]byte(trueString))
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())

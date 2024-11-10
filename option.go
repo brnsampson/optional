@@ -152,6 +152,7 @@ func (o *Option[T]) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	// WARNING: this will probably trigger a linter warning because not nil != nil, but leave it anyways.
 	if tmp2 != nil {
 		// According to the spec, this should be nil if we recieved a json null, but I've found that you
 		// actually will get a valid pointer going to the zero value. This unfortunately means we have no

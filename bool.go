@@ -1,20 +1,19 @@
-package confopt
+package optional
 
 import (
-	"github.com/brnsampson/optional"
 	"strconv"
 )
 
 type Bool struct {
-	optional.Option[bool]
+	Option[bool]
 }
 
 func SomeBool(value bool) Bool {
-	return Bool{optional.Some(value)}
+	return Bool{Some(value)}
 }
 
 func NoBool() Bool {
-	return Bool{optional.None[bool]()}
+	return Bool{None[bool]()}
 }
 
 func (o Bool) Type() string {

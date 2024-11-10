@@ -1,5 +1,7 @@
 package optional
 
+import "time"
+
 type OptionalError struct {
 	msg string
 }
@@ -13,6 +15,10 @@ func (e OptionalError) Error() string {
 }
 
 type Transformer[T comparable] func(T) (T, error)
+
+type primatives interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64 | ~bool | ~string | time.Time
+}
 
 // Optional defines the functionality needed to provide good ergonimics around optional fields and values. In general,
 // code should not declare variables or parameters as Optionals and instead prefer using concrete types like Option.
@@ -39,6 +45,23 @@ type MutableOptional[T comparable] interface {
 	Transform(f Transformer[T]) error
 	// Satisfies encoding.json.UnMarshaler
 	UnmarshalJSON([]byte) error
+}
+
+// LoadableOptional is an extension of the Optional interface meant to make it more useful for
+// loading from a variety of sources.
+type LoadableOptional[T primatives] interface {
+	MutableOptional[T]
+
+	// Satisfies fmt.Stringer interface
+	String() string
+	// Along with String(), implements flag.Value and pflag.Value
+	Type() string
+	Set(string) error
+	// Satisfies encoding.TextUnmarshaler
+	UnmarshalText(text []byte) error
+	// Satisfies encoding.TextMarshaler
+	MarshalText() (text []byte, err error)
+	// json.Marshaler and json.Unmarshaler are implemented by the embedded MutableOptional interface
 }
 
 // IsSomeAnd returns true if the Option has a value of Some(x) and f(x) == true

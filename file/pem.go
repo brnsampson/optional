@@ -1,15 +1,16 @@
-package confopt
+package file
 
 import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"github.com/brnsampson/optional"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
+
+	"github.com/brnsampson/optional"
 )
 
 // Verifying and setting file permissions for public/private keys and certificates use the following file mode masks.
@@ -107,54 +108,141 @@ func writeBlocks(path string, perms, notPerms fs.FileMode, blocks []*pem.Block) 
 	return nil
 }
 
+type pemFile struct {
+	File
+	setPerms     fs.FileMode
+	notPermsMask fs.FileMode
+}
+
+func somePem(path string, setPerms, permsNotAllowed fs.FileMode) (pemFile, error) {
+	f := SomeFile(path)
+	abs, err := f.Abs()
+	if err != nil {
+		return pemFile{}, err
+	}
+	return pemFile{abs, setPerms, permsNotAllowed}, nil
+}
+
+func noPem(setPerms, permsNotAllowed fs.FileMode) pemFile {
+	return pemFile{NoFile(), setPerms, permsNotAllowed}
+}
+
+func (o *pemFile) Set(str string) error {
+	return o.UnmarshalText([]byte(str))
+}
+
+// Override the inner Replace() method to ensure we only save absolute paths to our certificates
+func (o *pemFile) Replace(path string) (optional.Optional[string], error) {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return optional.None[string](), err
+	}
+
+	return o.File.Replace(abs)
+}
+
+func (o *pemFile) UnmarshalText(text []byte) error {
+	tmp := string(text)
+	if tmp == "None" || tmp == "none" || tmp == "null" || tmp == "nil" {
+		return o.File.UnmarshalText(text)
+	} else {
+		_, err := o.Replace(tmp)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (o pemFile) FilePermsValid() (bool, error) {
+	return o.File.FilePermsValid(o.notPermsMask)
+}
+
+func (o pemFile) SetFilePerms() error {
+	return o.File.SetFilePerms(o.setPerms)
+}
+
+func (o pemFile) ReadBlocks() (blocks []*pem.Block, err error) {
+	valid, err := o.FilePermsValid()
+	if err != nil {
+		return
+	}
+	if valid != true {
+		tmp, err := o.Get()
+		if err != nil {
+			return blocks, fmt.Errorf("ReadBlocks failed: %s. Was the path set?", err)
+		}
+		return blocks, fmt.Errorf("ReadBlocks failed for file %s: Expected file permissions %o", tmp, o.setPerms)
+	}
+
+	reader, err := o.Open()
+	if err != nil {
+		return
+	}
+	defer reader.Close()
+
+	encoded, err := io.ReadAll(reader)
+	if err != nil {
+		return
+	}
+
+	var block *pem.Block
+	for {
+		block, encoded = pem.Decode(encoded)
+		if block == nil {
+			break
+		}
+
+		blocks = append(blocks, block)
+	}
+	return
+}
+
+func (o pemFile) WriteBlocks(blocks []*pem.Block) error {
+	valid, err := o.FilePermsValid()
+	if err != nil {
+		return err
+	}
+	if valid != true {
+		err := o.SetFilePerms()
+		if err != nil {
+			return err
+		}
+	}
+
+	writer, err := o.Create()
+	if err != nil {
+		return err
+	}
+	defer writer.Close()
+
+	for _, block := range blocks {
+		err = pem.Encode(writer, block)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // Cert wraps an optional path string and provides extra methods for reading, decoding, and writing pem files containing
 // CERTIFICATE blocks.
 type Cert struct {
-	optional.Option[string]
+	pemFile
 }
 
-func SomeCert(path string) Cert {
-	return Cert{optional.Some(path)}
+func SomeCert(path string) (Cert, error) {
+	p, err := somePem(path, PubKeyFilePerms, PubKeyFilePermsMask)
+	if err != nil {
+		return Cert{}, err
+	}
+	return Cert{p}, nil
 }
 
 func NoCert() Cert {
-	return Cert{optional.None[string]()}
-}
-
-// Overrides Option.Match to account for relative paths potentially being different strings but representing the same file.
-func (o Cert) Match(probe string) bool {
-	if o.IsNone() {
-		return false
-	} else {
-		path, err := o.Get()
-		if err != nil {
-			// How did we get here...
-			return false
-		}
-
-		abs, err := filepath.Abs(probe)
-		if err != nil {
-			// Invalid paths can never be equal!
-			return false
-		}
-		return path == abs
-	}
-}
-
-// Overrides Option.Get() to update the behavior of all Get* and Unwrap* functions in order to always return the absolute
-// path of the desired file.
-func (o Cert) Get() (string, error) {
-	inner, err := o.Option.Get()
-	if err != nil {
-		return inner, err
-	}
-
-	abs, err := filepath.Abs(inner)
-	if err != nil {
-		return inner, err
-	}
-
-	return abs, nil
+	return Cert{noPem(PubKeyFilePerms, PubKeyFilePermsMask)}
 }
 
 func (o Cert) Type() string {
@@ -177,54 +265,8 @@ func (o Cert) String() string {
 	}
 }
 
-func (o Cert) MarshalText() (text []byte, err error) {
-	if o.IsNone() {
-		return []byte("None"), nil
-	} else {
-		tmp, err := o.Get()
-		return []byte(tmp), err
-	}
-}
-
-func (o *Cert) UnmarshalText(text []byte) error {
-	tmp := string(text)
-	if tmp == "None" || tmp == "none" || tmp == "null" || tmp == "nil" {
-		o.Clear()
-	} else {
-		o.Replace(tmp)
-	}
-
-	return nil
-}
-
-func (o Cert) FilePermsValid() (bool, error) {
-	tmp, err := o.Get()
-	if err != nil {
-		return false, err
-	}
-
-	return filePermsValid(tmp, PubKeyFilePermsMask)
-}
-
-func (o Cert) SetFilePerms() error {
-	tmp, err := o.Get()
-	if err != nil {
-		return err
-	}
-
-	return setFilePerms(tmp, PubKeyFilePerms)
-}
-
 func (o Cert) ReadCerts() (certs []*x509.Certificate, err error) {
-	tmp, err := o.Get()
-	if err != nil {
-		return
-	}
-
-	blocks, err := readBlocks(tmp, PubKeyFilePerms, PubKeyFilePermsMask)
-	if err != nil {
-		return
-	}
+	blocks, err := o.ReadBlocks()
 
 	var c []*x509.Certificate
 	for _, block := range blocks {
@@ -236,71 +278,39 @@ func (o Cert) ReadCerts() (certs []*x509.Certificate, err error) {
 			certs = append(certs, c...)
 		}
 	}
+
 	return
 }
 
 func (o Cert) WriteCerts(certs []*x509.Certificate) error {
-	path, err := o.Get()
-	if err != nil {
-		return err
-	}
-
 	blocks := make([]*pem.Block, 0)
 	for _, cert := range certs {
 		blocks = append(blocks, &pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw})
 	}
 
-	return writeBlocks(path, PubKeyFilePerms, PubKeyFilePermsMask, blocks)
+	err := o.WriteBlocks(blocks)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // PubKey wraps an optional path string and provides extra methods for reading, decoding, and writing pem files containing
 // "* PUBLIC KEY" blocks.
 type PubKey struct {
-	optional.Option[string]
+	pemFile
 }
 
-func SomePubKey(path string) PubKey {
-	return PubKey{optional.Some(path)}
+func SomePubKey(path string) (PubKey, error) {
+	p, err := somePem(path, PubKeyFilePerms, PubKeyFilePermsMask)
+	if err != nil {
+		return PubKey{}, err
+	}
+	return PubKey{p}, nil
 }
 
 func NoPubKey() PubKey {
-	return PubKey{optional.None[string]()}
-}
-
-// Overrides Option.Match to account for relative paths potentially being different strings but representing the same file.
-func (o PubKey) Match(probe string) bool {
-	if o.IsNone() {
-		return false
-	} else {
-		path, err := o.Get()
-		if err != nil {
-			// How did we get here...
-			return false
-		}
-
-		abs, err := filepath.Abs(probe)
-		if err != nil {
-			// Invalid paths can never be equal!
-			return false
-		}
-		return path == abs
-	}
-}
-
-// Overrides Option.Get() to update the behavior of all Get* and Unwrap* functions in order to always return the absolute
-// path of the desired file.
-func (o PubKey) Get() (string, error) {
-	inner, err := o.Option.Get()
-	if err != nil {
-		return inner, err
-	}
-
-	abs, err := filepath.Abs(inner)
-	if err != nil {
-		return inner, err
-	}
-
-	return abs, nil
+	return PubKey{noPem(PubKeyFilePerms, PubKeyFilePermsMask)}
 }
 
 func (o PubKey) Type() string {
@@ -323,54 +333,11 @@ func (o PubKey) String() string {
 	}
 }
 
-func (o PubKey) MarshalText() (text []byte, err error) {
-	if o.IsNone() {
-		return []byte("None"), nil
-	} else {
-		tmp, err := o.Get()
-		return []byte(tmp), err
-	}
-}
-
-func (o *PubKey) UnmarshalText(text []byte) error {
-	tmp := string(text)
-	if tmp == "None" || tmp == "none" || tmp == "null" || tmp == "nil" {
-		o.Clear()
-	} else {
-		o.Replace(tmp)
-	}
-
-	return nil
-}
-
-func (o PubKey) FilePermsValid() (bool, error) {
-	tmp, err := o.Get()
-	if err != nil {
-		return false, err
-	}
-
-	return filePermsValid(tmp, PubKeyFilePermsMask)
-}
-
-func (o PubKey) SetFilePerms() error {
-	tmp, err := o.Get()
-	if err != nil {
-		return err
-	}
-
-	return setFilePerms(tmp, PubKeyFilePerms)
-}
-
 // ReadPublicKeys will return all public keys found in the given filepath or error. The keys may be of type *rsa.PublicKey,
 // *ecdsa.PublicKey, ed25519.PublicKey (Note: that is not a pointer), or *ecdh.PublicKey, depending on the contents of
 // the file.
 func (o PubKey) ReadPublicKeys() (pub []any, err error) {
-	tmp, err := o.Get()
-	if err != nil {
-		return
-	}
-
-	blocks, err := readBlocks(tmp, PubKeyFilePerms, PubKeyFilePermsMask)
+	blocks, err := o.ReadBlocks()
 	if err != nil {
 		return
 	}
@@ -399,72 +366,40 @@ func (o PubKey) ReadPublicKeys() (pub []any, err error) {
 // a pointer), or *ecdh.PublicKey. The key will be encoded and written to the path the PubKey option is set to
 // with file permissions set appropriately.
 func (o PubKey) WritePublicKeys(pubs []any) error {
-	path, err := o.Get()
-	if err != nil {
-		return err
-	}
-
 	blocks := make([]*pem.Block, 0)
 	for _, pub := range pubs {
 		der, err := x509.MarshalPKIXPublicKey(pub)
 		if err != nil {
 			return err
 		}
+
 		block := pem.Block{Type: "PUBLIC KEY", Bytes: der}
 		blocks = append(blocks, &block)
 	}
 
-	return writeBlocks(path, PubKeyFilePerms, PubKeyFilePermsMask, blocks)
+	err := o.WriteBlocks(blocks)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // PubKey wraps an optional path string and provides extra methods for reading, decoding, and writing pem files containing
 // "* PRIVATE KEY" blocks.
 type PrivateKey struct {
-	optional.Option[string]
+	pemFile
 }
 
-func SomePrivateKey(path string) PrivateKey {
-	return PrivateKey{optional.Some(path)}
+func SomePrivateKey(path string) (PrivateKey, error) {
+	p, err := somePem(path, KeyFilePerms, KeyFilePermsMask)
+	if err != nil {
+		return PrivateKey{}, err
+	}
+	return PrivateKey{p}, nil
 }
 
 func NoPrivateKey() PrivateKey {
-	return PrivateKey{optional.None[string]()}
-}
-
-// Overrides Option.Match to account for relative paths potentially being different strings but representing the same file.
-func (o PrivateKey) Match(probe string) bool {
-	if o.IsNone() {
-		return false
-	} else {
-		path, err := o.Get()
-		if err != nil {
-			// How did we get here...
-			return false
-		}
-
-		abs, err := filepath.Abs(probe)
-		if err != nil {
-			// Invalid paths can never be equal!
-			return false
-		}
-		return path == abs
-	}
-}
-
-// Overrides Option.Get() to update the behavior of all Get* and Unwrap* functions in order to always return the absolute
-// path of the desired file.
-func (o PrivateKey) Get() (string, error) {
-	inner, err := o.Option.Get()
-	if err != nil {
-		return inner, err
-	}
-
-	abs, err := filepath.Abs(inner)
-	if err != nil {
-		return inner, err
-	}
-
-	return abs, nil
+	return PrivateKey{noPem(KeyFilePerms, KeyFilePermsMask)}
 }
 
 func (o PrivateKey) Type() string {
@@ -487,64 +422,11 @@ func (o PrivateKey) String() string {
 	}
 }
 
-func (o PrivateKey) MarshalText() (text []byte, err error) {
-	if o.IsNone() {
-		return []byte("None"), nil
-	} else {
-		tmp, err := o.Get()
-		return []byte(tmp), err
-	}
-}
-
-func (o *PrivateKey) UnmarshalText(text []byte) error {
-	tmp := string(text)
-	if tmp == "None" || tmp == "none" || tmp == "null" || tmp == "nil" {
-		o.Clear()
-	} else {
-		o.Replace(tmp)
-	}
-
-	return nil
-}
-
-func (o PrivateKey) FilePermsValid() (bool, error) {
-	tmp, err := o.Get()
-	if err != nil {
-		return false, err
-	}
-
-	stat, err := os.Stat(tmp)
-	mode := stat.Mode()
-	if (mode & KeyFilePermsMask) == 0 {
-		// mode excludes all of the flags --xrwxrwx. That is to say, the permissions are 600
-		return true, nil
-	}
-
-	return false, nil
-}
-
-func (o PrivateKey) SetFilePerms() error {
-	tmp, err := o.Get()
-	if err != nil {
-		return err
-	}
-
-	err = os.Chmod(tmp, KeyFilePerms)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // ReadPrivateKey will return the first private key found in the given filepath or error. This may return an *rsa.PrivateKey,
 // *ecdsa.PrivateKey, ed25519.PrivateKey (Note: that is not a pointer), or *ecdh.PrivateKey, depending on the contents of
 // the file.
 func (o PrivateKey) ReadPrivateKey() (key any, err error) {
-	path, err := o.Get()
-	if err != nil {
-		return
-	}
-	blocks, err := readBlocks(path, KeyFilePerms, KeyFilePermsMask)
+	blocks, err := o.ReadBlocks()
 	if err != nil {
 		return
 	}
@@ -571,13 +453,22 @@ func (o PrivateKey) ReadPrivateKey() (key any, err error) {
 
 // ReadCert accepts a Cert struct and returns a tls.Certificate for the keypair if both Optionals are Some. This
 // is going to be the most used case for anyone loading
-func (o PrivateKey) ReadCert(certIn Cert) (cert tls.Certificate, err error) {
+func (o PrivateKey) ReadCert(in Cert) (cert tls.Certificate, err error) {
+	valid, err := o.FilePermsValid()
+	if err != nil {
+		return
+	}
+
 	keyFile, err := o.Get()
 	if err != nil {
 		return
 	}
 
-	certFile, err := certIn.Get()
+	if valid != true {
+		return cert, fmt.Errorf("PrivateKey.ReadCert failed for file %s: Expected file permissions %o", keyFile, o.pemFile.setPerms)
+	}
+
+	certFile, err := in.Get()
 	if err != nil {
 		return
 	}
@@ -589,11 +480,6 @@ func (o PrivateKey) ReadCert(certIn Cert) (cert tls.Certificate, err error) {
 // a pointer), or *ecdh.PrivateKey. The key will be encoded and written to the path the PrivateKey option is set to
 // with file permissions set appropriately.
 func (o PrivateKey) WritePrivateKey(key any) error {
-	path, err := o.Get()
-	if err != nil {
-		return err
-	}
-
 	der, err := x509.MarshalPKCS8PrivateKey(key)
 	if err != nil {
 		return err
@@ -602,5 +488,9 @@ func (o PrivateKey) WritePrivateKey(key any) error {
 	block := pem.Block{Type: "PRIVATE KEY", Bytes: der}
 	blocks := []*pem.Block{&block}
 
-	return writeBlocks(path, KeyFilePerms, KeyFilePermsMask, blocks)
+	err = o.WriteBlocks(blocks)
+	if err != nil {
+		return err
+	}
+	return nil
 }

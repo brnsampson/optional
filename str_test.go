@@ -1,26 +1,27 @@
-package confopt_test
+package optional_test
 
 import (
-	"github.com/brnsampson/optional/confopt"
-	"gotest.tools/v3/assert"
 	"reflect"
 	"testing"
+
+	"github.com/brnsampson/optional"
+	"gotest.tools/v3/assert"
 )
 
 func TestStrType(t *testing.T) {
-	o := confopt.SomeStr("A dumb test string")
+	o := optional.SomeStr("A dumb test string")
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
 
 func TestStrString(t *testing.T) {
 	str := "testing this tester with the testing module"
-	o := confopt.SomeStr(str)
+	o := optional.SomeStr(str)
 	assert.Equal(t, str, o.String())
 }
 
 func TestStrMarshalText(t *testing.T) {
 	str := "testing this tester with the testing module"
-	o := confopt.SomeStr(str)
+	o := optional.SomeStr(str)
 
 	s, err := o.MarshalText()
 	assert.NilError(t, err)
@@ -33,7 +34,7 @@ func TestStrUnmarshalText(t *testing.T) {
 	intStr := "42"
 
 	// Text sucessful unmarshaling
-	o := confopt.NoStr()
+	o := optional.NoStr()
 	err := o.UnmarshalText([]byte(str))
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())

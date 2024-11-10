@@ -1,21 +1,20 @@
-package confopt
+package optional
 
 import (
-	"github.com/brnsampson/optional"
 	"strconv"
 )
 
 // 32bit sized floats
 type Float32 struct {
-	optional.Option[float32]
+	Option[float32]
 }
 
 func SomeFloat32(value float32) Float32 {
-	return Float32{optional.Some(value)}
+	return Float32{Some(value)}
 }
 
 func NoFloat32() Float32 {
-	return Float32{optional.None[float32]()}
+	return Float32{None[float32]()}
 }
 
 func (o Float32) Type() string {
@@ -63,15 +62,15 @@ func (o *Float32) UnmarshalText(text []byte) error {
 
 // 64bit sized floats
 type Float64 struct {
-	optional.Option[float64]
+	Option[float64]
 }
 
 func SomeFloat64(value float64) Float64 {
-	return Float64{optional.Some(value)}
+	return Float64{Some(value)}
 }
 
 func NoFloat64() Float64 {
-	return Float64{optional.None[float64]()}
+	return Float64{None[float64]()}
 }
 
 func (o Float64) Type() string {

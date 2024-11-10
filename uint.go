@@ -1,21 +1,20 @@
-package confopt
+package optional
 
 import (
-	"github.com/brnsampson/optional"
 	"strconv"
 )
 
 // default sized uint
 type Uint struct {
-	optional.Option[uint]
+	Option[uint]
 }
 
 func SomeUint(value uint) Uint {
-	return Uint{optional.Some(value)}
+	return Uint{Some(value)}
 }
 
 func NoUint() Uint {
-	return Uint{optional.None[uint]()}
+	return Uint{None[uint]()}
 }
 
 func (o Uint) Type() string {
@@ -63,15 +62,15 @@ func (o *Uint) UnmarshalText(text []byte) error {
 
 // 8bit sized uint
 type Uint8 struct {
-	optional.Option[uint8]
+	Option[uint8]
 }
 
 func SomeUint8(value uint8) Uint8 {
-	return Uint8{optional.Some(value)}
+	return Uint8{Some(value)}
 }
 
 func NoUint8() Uint8 {
-	return Uint8{optional.None[uint8]()}
+	return Uint8{None[uint8]()}
 }
 
 func (o Uint8) Type() string {
@@ -119,15 +118,15 @@ func (o *Uint8) UnmarshalText(text []byte) error {
 
 // 16bit sized uint
 type Uint16 struct {
-	optional.Option[uint16]
+	Option[uint16]
 }
 
 func SomeUint16(value uint16) Uint16 {
-	return Uint16{optional.Some(value)}
+	return Uint16{Some(value)}
 }
 
 func NoUint16() Uint16 {
-	return Uint16{optional.None[uint16]()}
+	return Uint16{None[uint16]()}
 }
 
 func (o Uint16) Type() string {
@@ -175,15 +174,15 @@ func (o *Uint16) UnmarshalText(text []byte) error {
 
 // 32bit sized uint
 type Uint32 struct {
-	optional.Option[uint32]
+	Option[uint32]
 }
 
 func SomeUint32(value uint32) Uint32 {
-	return Uint32{optional.Some(value)}
+	return Uint32{Some(value)}
 }
 
 func NoUint32() Uint32 {
-	return Uint32{optional.None[uint32]()}
+	return Uint32{None[uint32]()}
 }
 
 func (o Uint32) Type() string {
@@ -231,15 +230,15 @@ func (o *Uint32) UnmarshalText(text []byte) error {
 
 // 64bit sized uint
 type Uint64 struct {
-	optional.Option[uint64]
+	Option[uint64]
 }
 
 func SomeUint64(value uint64) Uint64 {
-	return Uint64{optional.Some(value)}
+	return Uint64{Some(value)}
 }
 
 func NoUint64() Uint64 {
-	return Uint64{optional.None[uint64]()}
+	return Uint64{None[uint64]()}
 }
 
 func (o Uint64) Type() string {

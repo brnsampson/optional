@@ -1,4 +1,5 @@
 # optional
+
 Go library for working with optional values
 
 ## What?
@@ -37,7 +38,7 @@ package for longer than it took to write the package.
 ## How?
 
 See the example/ directory for a setup for brain-dead config parsing. Sure, it's verbose for two real parameters and there
-are is a lot of boilderplate for what it does, but nothing is going to go wrong and it is fully extendable to a real
+are is a lot of boilerplate for what it does, but nothing is going to go wrong and it is fully extendable to a real
 world project without needing any complicated additional libraries involved. Don't get me wrong, Cobra and Viper are
 super powerful and well maintained, but 98% of the time I only really want one command per executable and every time I
 touch Cobra or Viper I spend at least half an hour reading through documentation. Why bother for the vast majority of my
@@ -45,31 +46,33 @@ work what just involves [stupid things](https://github.com/brnsampson/go-partypa
 as [party parrots](https://cultofthepartyparrot.com/)?
 
 Note that while this looks like a lot of code for what it does, it does have a good set of functionality for a small project:
- * Clear precedence of config sources
- * Only basic `flag` library used
- * Flag for debug output
- * Flag to choose config file (including option to skip file loading without needing a separate flag!)
- * Annotations for env var mapping and file loading of the config are defined by the loader struct itself
- * Default values kept directly above config loader structs for easy comparison
- * No super ugly long parameter sets to pass from flag parsing to initialize structs (builder pattern preferred)
- * Reloadable, so if you create an init ConfigLoader from flags you can then do hot reloads in response to e.g. a SIGHUP (see example/main.go)
- * No magic hidden in a library you need to look up
+
+- Clear precedence of config sources
+- Only basic `flag` library used
+- Flag for debug output
+- Flag to choose config file (including option to skip file loading without needing a separate flag!)
+- Annotations for env var mapping and file loading of the config are defined by the loader struct itself
+- Default values kept directly above config loader structs for easy comparison
+- No super ugly long parameter sets to pass from flag parsing to initialize structs (builder pattern preferred)
+- Reloadable, so if you create an init ConfigLoader from flags you can then do hot reloads in response to e.g. a SIGHUP (see example/main.go)
+- No magic hidden in a library you need to look up
 
 If you want to try it, it was written so that the precedence is flags > file > env. The default values in the code are
 { Host: "localhost", Port: 1443 }.
 
 Try running it a few different ways and seeing what happens!
+
 ```bash
 go run ./example
 PORT=3000 go run ./example
 PORT=3000 go run ./example --port 5000
 PORT=3000 go run ./example --port 5000 --host "example.com"
 PORT=3000 HOST=host.from.env go run ./example
-PORT=3000 HOST=host.from.env go run ./example --config alt.toml
+PORT=3000 HOST=host.from.env go run ./example --config ./example/alt.toml
 HOST=host.from.env go run ./example --config none
-PORT=3000 HOST=host.from.env go run ./example --config alt.toml --port 5000 --host host.from.flag
-PORT=3000 HOST=host.from.env go run ./example --config alt.toml --port 5000 --host host.from.flag
-PORT=3000 HOST=host.from.env go run ./example --debug --config alt.toml --port 5000 --host host.from.flag
+PORT=3000 HOST=host.from.env go run ./example --config ./example/alt.toml --port 5000 --host host.from.flag
+PORT=3000 HOST=host.from.env go run ./example --config ./example/alt.toml --port 5000 --host host.from.flag
+PORT=3000 HOST=host.from.env go run ./example --log debug --config ./example/alt.toml --port 5000 --host host.from.flag
 ```
 
 ## State of the art
@@ -80,67 +83,78 @@ by the ones I am aware of, however.
 ### [markphelips/optional](https://github.com/markphelps/optional)
 
 #### Pros
- - should be somewhat performant due to just using a pointer under the hood
- - ergonomics pretty good
+
+- should be somewhat performant due to just using a pointer under the hood
+- ergonomics pretty good
 
 #### Cons
- - one optional type per underlying type
- - Requires a go generate script to support any non-implemented type
- - Doesn't support some useful features like applying transforms to the value inside the option
- - You could be surprised if you store one of these types in a struct since they are values wrapping pointers, and that would be a nasty debugging session.
+
+- one optional type per underlying type
+- Requires a go generate script to support any non-implemented type
+- Doesn't support some useful features like applying transforms to the value inside the option
+- You could be surprised if you store one of these types in a struct since they are values wrapping pointers, and that would be a nasty debugging session.
 
 ### [leighmcculloch go-optional](https://github.com/leighmcculloch/go-optional)
 
 #### Pros
- - Generic so it can be applied to any type
- - short and sweet
- - supports JSON and XML marshaling/unmarshaling
+
+- Generic so it can be applied to any type
+- short and sweet
+- supports JSON and XML marshaling/unmarshaling
 
 #### Cons
- - Generic over `any`, so things like equality can't be supported
- - I don't know if using an internal array is any more efficient than a boolean to represent Some/None
- - The Marshaling/Unmarshaling uses the zero values to represent None instead of `null`, removing much of the benefit there
- - Methods like `String()` uses Sprintf, which uses reflection. There is poor performance, then there is reflection performance.
+
+- Generic over `any`, so things like equality can't be supported
+- I don't know if using an internal array is any more efficient than a boolean to represent Some/None
+- The Marshaling/Unmarshaling uses the zero values to represent None instead of `null`, removing much of the benefit there
+- Methods like `String()` uses Sprintf, which uses reflection. There is poor performance, then there is reflection performance.
 
 ### Magic Values
+
 This is just when you use a specific value to represent your `None`. Sometimes this makes sense, such as when you have
 a string field where an empty string would be meaningless.
 
 #### Pros
- - Easy to use by just defining a const in your package
- - Possibly the most efficient way to do this
+
+- Easy to use by just defining a const in your package
+- Possibly the most efficient way to do this
 
 #### Cons
- - You don't always an invalid value to use as your magic value, so it's just impossible sometimes.
- - Ergonomics can get messy; different libraries may return different magic values which you have to translate between
+
+- You don't always an invalid value to use as your magic value, so it's just impossible sometimes.
+- Ergonomics can get messy; different libraries may return different magic values which you have to translate between
 
 ### Pointers
 
 #### Pros
- - Effective and fast. Just a nil check tells you if a value is set or not.
+
+- Effective and fast. Just a nil check tells you if a value is set or not.
 
 #### Cons
- - Nil checks everywhere. It's on you to check for nil before _every_ use, and the consequences of forgetting is a nil
-pointer dereference panic.
- - Makes for more difficult to read and reason about code at a surprisingly low level of complexity
-  - If you every pass a struct by value your invariants can be broken by methods modifying some fields only in the copied struct
-    and others in the copied and original struct. You need to be _very_ careful if you do that.
+
+- Nil checks everywhere. It's on you to check for nil before _every_ use, and the consequences of forgetting is a nil
+  pointer dereference panic.
+- Makes for more difficult to read and reason about code at a surprisingly low level of complexity
+- If you every pass a struct by value your invariants can be broken by methods modifying some fields only in the copied struct
+  and others in the copied and original struct. You need to be _very_ careful if you do that.
 
 ### This package
 
 #### Pros
- - Ergonomics pretty good
- - No surprises
- - Generic implementation means all types can be used in the same way
- - Methods for performing transforms on data without extracting it first
- - Specialized optional types can be built on top to provide any needed functionality for specific use cases.
+
+- Ergonomics pretty good
+- No surprises
+- Generic implementation means all types can be used in the same way
+- Methods for performing transforms on data without extracting it first
+- Specialized optional types can be built on top to provide any needed functionality for specific use cases.
 
 #### Cons
- - Inefficient in terms of space and performance
- - Core `Option` type is limited in implementing convenient stdlib interfaces due to the use of generics.
- - To make the thing more useful, only `comparable` values can be wrapped currently. This isn't usually too big of a
-deal for most _values_, but does mean that you cannot create an array option for example
-(but why would you do that?!? Just check for zero len!)
+
+- Inefficient in terms of space and performance
+- Core `Option` type is limited in implementing convenient stdlib interfaces due to the use of generics.
+- To make the thing more useful, only `comparable` values can be wrapped currently. This isn't usually too big of a
+  deal for most _values_, but does mean that you cannot create an array option for example
+  (but why would you do that?!? Just check for zero len!)
 
 ## Why?
 
@@ -209,15 +223,14 @@ Well hey, just make the field an Optional and when the component consumes its pa
 value and the rest of the struct just has a None Optional left. It has all the same methods and code has to handle the
 errors returned just like normal, but now it won't cause an unhandled panic if you lose focus for more than 10 seconds!
 
-
 ### Why didn't you just wrap a pointer then do the right thing? Isn't copying things around by value all the time expensive?
 
 1. There is a whole world of hurt in golang around structs with pointer fields. If someone is so foolish as to blindly
-pass such a thing around by value, bad things can happen quickly.
+   pass such a thing around by value, bad things can happen quickly.
 2. As such, I initially tried to only return pointers to optionals, but given the methods I wanted to provide this didn't
-always work well.
+   always work well.
 3. You can always make an option with a pointer inner type if you want that. It probably isn't totally safe in all cases
-and there is a very real chance that it won't do what you want. YMMV!
+   and there is a very real chance that it won't do what you want. YMMV!
 
 ## Generating the keys and certs for testing
 

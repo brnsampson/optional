@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/brnsampson/optional/confopt"
-	"github.com/charmbracelet/log"
+	"log/slog"
+	"os"
 )
 
 const (
@@ -12,59 +12,51 @@ const (
 )
 
 var (
-	debug bool
-	dev bool
-	DEV_HOST = confopt.SomeStr("127.0.0.1")
-	DEV_PORT = confopt.SomeInt(8088)
+	help bool
+	h    bool
 )
 
 func main() {
-	confPath := confopt.SomeStr(DEFAULT_FLAG_CONFIG)
-	host := confopt.NoStr()
-	port := confopt.NoInt()
-	flag.BoolVar(&debug, "debug", false, "set logging level to debug")
-	flag.BoolVar(&dev, "dev", false, "Set default values appropriate for local development")
-	flag.Var(&confPath, "confopt", "path to confopt file. Set to `none` to disable loading from confopt.")
-	flag.Var(&host, "host", "hostname for a server or whatever")
-	flag.Var(&port, "port", "port for a server or whatever")
+	setupFlags()
+
+	flag.BoolVar(&help, "help", false, "Get usage message")
+	flag.BoolVar(&h, "h", false, "Get usage message")
 	flag.Parse()
 
-	if debug {
-		log.SetLevel(log.DebugLevel)
+	if help || h {
+		flag.Usage()
+		os.Exit(0)
 	}
 
-	sl := NewSubConfigLoader().WithPort(port)
-	flagConf := NewConfigLoader().WithHost(host)
+	loader := NewLoader()
+	slog.Info("Initialized loader", "loader", loader)
+	slog.Info("Initialized sub-loader", "loader", loader.SubLoader)
 
-	if dev {
-		sl = sl.WithPort(DEV_PORT)
-		flagConf = flagConf.WithHost(DEV_HOST)
-	}
-
-	flagConf = flagConf.WithNested(sl)
-
-	log.Debug("Loaded sub confopt loader from flags", "confopt", sl)
-	log.Debug("Loaded confopt loader from flags", "confopt", flagConf)
-
-
-	config, err := NewConfig(flagConf)
+	err := loader.Update("")
 	if err != nil {
-		fmt.Println(err)
-		panic("Error while finalizing the config!")
+		slog.Error("Error loading config", "error", err)
+		os.Exit(2)
+	} else {
+		slog.Info("Loading completed")
 	}
+	config := loader.Current()
 
-	// Reload with config.Reload()
-	err = config.Reload()
-	if err != nil {
-		fmt.Println(err)
-		panic("Error while reloading config!")
-	}
+	// Set up logging
+	programLevel := new(slog.LevelVar)
+	programLevel.Set(config.LogLevel)
+	// h := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: programLevel})
+	h := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: programLevel})
+	logger := slog.New(h)
+	slog.SetDefault(logger)
+
+	slog.Debug("Loaded sub-config", "config", config.SubConfig)
+	slog.Debug("Loaded config", "config", config)
 
 	// We have a reloadable config! Easy, right?!?! ...right?
 	fmt.Println("")
-	fmt.Println("I loaded a config and my name is:")
+	fmt.Println("I loaded a config and my host is:")
 	fmt.Println(config.Host)
 	fmt.Println("")
-	fmt.Println("And my port is:")
-	fmt.Println(config.Nested.Port)
+	fmt.Println("And my address is:")
+	fmt.Println(config.SubConfig.GetAddr())
 }

@@ -1,21 +1,20 @@
-package confopt
+package optional
 
 import (
-	"github.com/brnsampson/optional"
 	"strconv"
 )
 
 // default sized int
 type Int struct {
-	optional.Option[int]
+	Option[int]
 }
 
 func SomeInt(value int) Int {
-	return Int{optional.Some(value)}
+	return Int{Some(value)}
 }
 
 func NoInt() Int {
-	return Int{optional.None[int]()}
+	return Int{None[int]()}
 }
 
 func (o Int) Type() string {
@@ -63,15 +62,15 @@ func (o *Int) UnmarshalText(text []byte) error {
 
 // 8bit sized int
 type Int8 struct {
-	optional.Option[int8]
+	Option[int8]
 }
 
 func SomeInt8(value int8) Int8 {
-	return Int8{optional.Some(value)}
+	return Int8{Some(value)}
 }
 
 func NoInt8() Int8 {
-	return Int8{optional.None[int8]()}
+	return Int8{None[int8]()}
 }
 
 func (o Int8) Type() string {
@@ -119,15 +118,15 @@ func (o *Int8) UnmarshalText(text []byte) error {
 
 // 16bit sized int
 type Int16 struct {
-	optional.Option[int16]
+	Option[int16]
 }
 
 func SomeInt16(value int16) Int16 {
-	return Int16{optional.Some(value)}
+	return Int16{Some(value)}
 }
 
 func NoInt16() Int16 {
-	return Int16{optional.None[int16]()}
+	return Int16{None[int16]()}
 }
 
 func (o Int16) Type() string {
@@ -175,15 +174,15 @@ func (o *Int16) UnmarshalText(text []byte) error {
 
 // 32bit sized int
 type Int32 struct {
-	optional.Option[int32]
+	Option[int32]
 }
 
 func SomeInt32(value int32) Int32 {
-	return Int32{optional.Some(value)}
+	return Int32{Some(value)}
 }
 
 func NoInt32() Int32 {
-	return Int32{optional.None[int32]()}
+	return Int32{None[int32]()}
 }
 
 func (o Int32) Type() string {
@@ -231,15 +230,15 @@ func (o *Int32) UnmarshalText(text []byte) error {
 
 // 64bit sized int
 type Int64 struct {
-	optional.Option[int64]
+	Option[int64]
 }
 
 func SomeInt64(value int64) Int64 {
-	return Int64{optional.Some(value)}
+	return Int64{Some(value)}
 }
 
 func NoInt64() Int64 {
-	return Int64{optional.None[int64]()}
+	return Int64{None[int64]()}
 }
 
 func (o Int64) Type() string {

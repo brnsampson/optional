@@ -1,4 +1,4 @@
-host = "host.from.alternate.file"
+Host = "host.from.alternate.file"
 
-[nested]
-port = 3000
+[SubLoader]
+Port = 3000
