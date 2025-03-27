@@ -1,9 +1,10 @@
 package optional_test
 
 import (
+	"testing"
+
 	"github.com/brnsampson/optional"
 	"gotest.tools/v3/assert"
-	"testing"
 )
 
 func TestOptionIsOptional(t *testing.T) {
@@ -42,7 +43,7 @@ func TestOr(t *testing.T) {
 	res := optional.Or(&S1, &S2)
 
 	assert.Assert(t, res.IsSome())
-	assert.Equal(t, s, optional.Must(res))
+	assert.Equal(t, s, res.MustGet())
 }
 
 // Skipping ClearIfMatch since it is literally just calling two covered functions
@@ -78,15 +79,15 @@ func TestGetOrInsert(t *testing.T) {
 	assert.Assert(t, none.IsSome())
 	tmp = 0
 
-	tmp, err = none.Get()
-	assert.NilError(t, err)
+	tmp, ok := none.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, val2, tmp)
 }
 
 func TestOptionMustPanics(t *testing.T) {
 	defer func() { _ = recover() }()
 	o := optional.None[int]()
-	_ = optional.Must(o)
+	_ = o.MustGet()
 
 	t.Errorf("Must() failed to panic on a None value Option")
 }
@@ -105,16 +106,15 @@ func TestTransformOr(t *testing.T) {
 	assert.Assert(t, !o.IsNone())
 
 	optional.TransformOr(&o, transform, def)
-	tmp, err := o.Get()
-	assert.NilError(t, err)
+	tmp, ok := o.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, after_val, tmp)
 
 	// Transforming a None value makes it a Some(val)
 	none := optional.None[int]()
 	optional.TransformOr(&none, transform, def)
 
-	tmp, err = none.Get()
-	assert.NilError(t, err)
+	tmp, ok = none.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, after_def, tmp)
 }
-

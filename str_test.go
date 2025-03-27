@@ -39,8 +39,8 @@ func TestStrUnmarshalText(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())
 
-	ret, err := o.Get()
-	assert.NilError(t, err)
+	ret, ok := o.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, str, ret)
 
 	// Test unmarshaling null
@@ -53,7 +53,7 @@ func TestStrUnmarshalText(t *testing.T) {
 	err = o.UnmarshalText([]byte(intStr))
 	assert.NilError(t, err)
 
-	ret, err = o.Get()
-	assert.NilError(t, err)
+	ret, ok = o.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, intStr, ret)
 }

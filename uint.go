@@ -29,8 +29,8 @@ func (o Uint) String() string {
 	if o.IsNone() {
 		return "None[Uint]"
 	} else {
-		tmp, err := o.Get()
-		if err != nil {
+		tmp, ok := o.Get()
+		if !ok {
 			return "Error[Uint]"
 		}
 		return strconv.FormatUint(uint64(tmp), 10)
@@ -41,7 +41,11 @@ func (o Uint) MarshalText() (text []byte, err error) {
 	if o.IsNone() {
 		return []byte("None"), nil
 	} else {
-		tmp, err := o.Get()
+		tmp, ok := o.Get()
+		var err error
+		if !ok {
+			err = optionalError("Attempted to Get Option with None value")
+		}
 		return []byte(strconv.FormatUint(uint64(tmp), 10)), err
 	}
 }
@@ -85,8 +89,8 @@ func (o Uint8) String() string {
 	if o.IsNone() {
 		return "None[Uint8]"
 	} else {
-		tmp, err := o.Get()
-		if err != nil {
+		tmp, ok := o.Get()
+		if !ok {
 			return "Error[Uint8]"
 		}
 		return strconv.FormatUint(uint64(tmp), 10)
@@ -97,7 +101,11 @@ func (o Uint8) MarshalText() (text []byte, err error) {
 	if o.IsNone() {
 		return []byte("None"), nil
 	} else {
-		tmp, err := o.Get()
+		tmp, ok := o.Get()
+		var err error
+		if !ok {
+			err = optionalError("Attempted to Get Option with None value")
+		}
 		return []byte(strconv.FormatUint(uint64(tmp), 10)), err
 	}
 }
@@ -141,8 +149,8 @@ func (o Uint16) String() string {
 	if o.IsNone() {
 		return "None[Uint16]"
 	} else {
-		tmp, err := o.Get()
-		if err != nil {
+		tmp, ok := o.Get()
+		if !ok {
 			return "Error[Uint16]"
 		}
 		return strconv.FormatUint(uint64(tmp), 10)
@@ -153,7 +161,11 @@ func (o Uint16) MarshalText() (text []byte, err error) {
 	if o.IsNone() {
 		return []byte("None"), nil
 	} else {
-		tmp, err := o.Get()
+		tmp, ok := o.Get()
+		var err error
+		if !ok {
+			err = optionalError("Attempted to Get Option with None value")
+		}
 		return []byte(strconv.FormatUint(uint64(tmp), 10)), err
 	}
 }
@@ -197,8 +209,8 @@ func (o Uint32) String() string {
 	if o.IsNone() {
 		return "None[Uint32]"
 	} else {
-		tmp, err := o.Get()
-		if err != nil {
+		tmp, ok := o.Get()
+		if !ok {
 			return "Error[Uint32]"
 		}
 		return strconv.FormatUint(uint64(tmp), 10)
@@ -209,7 +221,11 @@ func (o Uint32) MarshalText() (text []byte, err error) {
 	if o.IsNone() {
 		return []byte("None"), nil
 	} else {
-		tmp, err := o.Get()
+		tmp, ok := o.Get()
+		var err error
+		if !ok {
+			err = optionalError("Attempted to Get Option with None value")
+		}
 		return []byte(strconv.FormatUint(uint64(tmp), 10)), err
 	}
 }
@@ -253,8 +269,8 @@ func (o Uint64) String() string {
 	if o.IsNone() {
 		return "None[Uint64]"
 	} else {
-		tmp, err := o.Get()
-		if err != nil {
+		tmp, ok := o.Get()
+		if !ok {
 			return "Error[Uint64]"
 		}
 		return strconv.FormatUint(tmp, 10)
@@ -265,7 +281,11 @@ func (o Uint64) MarshalText() (text []byte, err error) {
 	if o.IsNone() {
 		return []byte("None"), nil
 	} else {
-		tmp, err := o.Get()
+		tmp, ok := o.Get()
+		var err error
+		if !ok {
+			err = optionalError("Attempted to Get Option with None value")
+		}
 		return []byte(strconv.FormatUint(tmp, 10)), err
 	}
 }

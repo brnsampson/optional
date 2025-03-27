@@ -28,8 +28,8 @@ func (o Bool) String() string {
 	if o.IsNone() {
 		return "None[Bool]"
 	} else {
-		tmp, err := o.Get()
-		if err != nil {
+		tmp, ok := o.Get()
+		if !ok {
 			return "Error[Bool]"
 		}
 		return strconv.FormatBool(tmp)
@@ -40,7 +40,11 @@ func (o Bool) MarshalText() (text []byte, err error) {
 	if o.IsNone() {
 		return []byte("None"), nil
 	} else {
-		tmp, err := o.Get()
+		tmp, ok := o.Get()
+		var err error
+		if !ok {
+			err = optionalError("Attempted to Get Option with None value")
+		}
 		return []byte(strconv.FormatBool(tmp)), err
 	}
 }

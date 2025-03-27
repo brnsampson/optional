@@ -43,8 +43,8 @@ func TestTimeUnmarshalText(t *testing.T) {
 	err := o.UnmarshalText([]byte(nowString))
 	assert.NilError(t, err)
 
-	ret, err := o.Get()
-	assert.NilError(t, err)
+	ret, ok := o.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, now, ret)
 	assert.Equal(t, later, ret.Add(wait))
 
@@ -106,7 +106,8 @@ func TestTimeUnmarshalJson(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())
 
-	res, err := o.Get()
+	res, ok := o.Get()
+	assert.Assert(t, ok)
 	assert.NilError(t, err)
 	assert.Equal(t, now, res)
 

@@ -8,6 +8,18 @@ import (
 	"github.com/brnsampson/optional"
 )
 
+type FileOptionError struct {
+	msg string
+}
+
+func fileOptionError(msg string) *FileOptionError {
+	return &FileOptionError{msg}
+}
+
+func (e FileOptionError) Error() string {
+	return e.msg
+}
+
 type File struct {
 	optional.Str
 }
@@ -25,8 +37,8 @@ func (o File) Match(probe string) bool {
 	if o.IsNone() {
 		return false
 	} else {
-		path, err := o.Get()
-		if err != nil {
+		path, ok := o.Get()
+		if !ok {
 			// How did we get here...
 			return false
 		}
@@ -56,8 +68,8 @@ func (o File) String() string {
 	if o.IsNone() {
 		return "None[File]"
 	} else {
-		tmp, err := o.Get()
-		if err != nil {
+		tmp, ok := o.Get()
+		if !ok {
 			return "Error[File]"
 		}
 		return tmp
@@ -65,8 +77,8 @@ func (o File) String() string {
 }
 
 func (o File) Abs() (opt File, err error) {
-	path, err := o.Get()
-	if err != nil {
+	path, ok := o.Get()
+	if !ok {
 		opt.Clear()
 		return
 	}
@@ -82,8 +94,8 @@ func (o File) Abs() (opt File, err error) {
 }
 
 func (o File) Stat() (stat fs.FileInfo, err error) {
-	path, err := o.Get()
-	if err != nil {
+	path, ok := o.Get()
+	if !ok {
 		// None files don't exist!
 		return
 	}
@@ -116,12 +128,12 @@ func (o File) FilePermsValid(badBits fs.FileMode) (bool, error) {
 }
 
 func (o File) SetFilePerms(mode fs.FileMode) error {
-	path, err := o.Get()
-	if err != nil {
-		return err
+	path, ok := o.Get()
+	if !ok {
+		return fileOptionError("Attempted to set file permissions on File with None value")
 	}
 
-	err = os.Chmod(path, mode)
+	err := os.Chmod(path, mode)
 	if err != nil {
 		return err
 	}
@@ -129,9 +141,9 @@ func (o File) SetFilePerms(mode fs.FileMode) error {
 }
 
 func (o File) Open() (*os.File, error) {
-	path, err := o.Get()
-	if err != nil {
-		return nil, err
+	path, ok := o.Get()
+	if !ok {
+		return nil, fileOptionError("Attempted to open an Optional File with None value")
 	}
 
 	if _, err := o.Stat(); err != nil {
@@ -142,9 +154,9 @@ func (o File) Open() (*os.File, error) {
 }
 
 func (o File) Create() (*os.File, error) {
-	path, err := o.Get()
-	if err != nil {
-		return nil, err
+	path, ok := o.Get()
+	if !ok {
+		return nil, fileOptionError("Attempted to create Optional File with None value")
 	}
 
 	if _, err := o.Stat(); err != nil {

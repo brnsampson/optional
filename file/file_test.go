@@ -21,15 +21,15 @@ func TestFileGet(t *testing.T) {
 	// an error here doesn't mean our library is broken, just that the path we chose to test with isn't valid.
 	assert.NilError(t, err)
 
-	tmp, err := o.Get()
-	assert.NilError(t, err)
+	tmp, ok := o.Get()
+	assert.Assert(t, ok)
 
 	assert.Equal(t, path, tmp)
 	a, err := o.Abs()
 	assert.NilError(t, err)
 
-	tmp, err = a.Get()
-	assert.NilError(t, err)
+	tmp, ok = a.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, abs, tmp)
 }
 
@@ -66,8 +66,8 @@ func TestFileUnmarshalText(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())
 
-	ret, err := o.Get()
-	assert.NilError(t, err)
+	ret, ok := o.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, path, ret)
 
 	// Test unmarshaling null
@@ -80,7 +80,7 @@ func TestFileUnmarshalText(t *testing.T) {
 	err = o.UnmarshalText([]byte(intFile))
 	assert.NilError(t, err)
 
-	ret, err = o.Get()
-	assert.NilError(t, err)
+	ret, ok = o.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, intFile, ret)
 }

@@ -25,8 +25,8 @@ func (o Str) String() string {
 	if o.IsNone() {
 		return "None[Str]"
 	} else {
-		tmp, err := o.Get()
-		if err != nil {
+		tmp, ok := o.Get()
+		if !ok {
 			return "Error[Str]"
 		}
 		return tmp
@@ -37,7 +37,11 @@ func (o Str) MarshalText() (text []byte, err error) {
 	if o.IsNone() {
 		return []byte("None"), nil
 	} else {
-		tmp, err := o.Get()
+		tmp, ok := o.Get()
+		var err error
+		if !ok {
+			err = optionalError("Attempted to Get Option with None value")
+		}
 		return []byte(tmp), err
 	}
 }

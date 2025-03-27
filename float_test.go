@@ -43,8 +43,8 @@ func TestFloat32UnmarshalText(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())
 
-	ret, err := o.Get()
-	assert.NilError(t, err)
+	ret, ok := o.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, f, ret)
 
 	// Test unmarshaling null
@@ -91,8 +91,8 @@ func TestFloat64UnmarshalText(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())
 
-	ret, err := o.Get()
-	assert.NilError(t, err)
+	ret, ok := o.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, f, ret)
 
 	// Test unmarshaling null

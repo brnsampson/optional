@@ -161,13 +161,13 @@ func (l *Loader) Update(configFile string) error {
 			return err
 		}
 
-		path, err := abs.Get()
-		if err != nil {
+		path, ok := abs.Get()
+		if !ok {
 			slog.Error(
 				"Could not retrieve absolute file path from loader",
 				slog.String("path", path),
 				slog.Any("state", l),
-				slog.Any("error", err),
+				slog.Any("error", "Absolute file path value was None"),
 			)
 			return err
 		}

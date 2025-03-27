@@ -39,8 +39,8 @@ func TestBoolUnmarshalText(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())
 
-	ret, err := o.Get()
-	assert.NilError(t, err)
+	ret, ok := o.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, true, ret)
 
 	// Test unmarshaling null

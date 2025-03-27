@@ -43,8 +43,8 @@ func TestUintUnmarshalText(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())
 
-	ret, err := o.Get()
-	assert.NilError(t, err)
+	ret, ok := o.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, i, ret)
 
 	// Test unmarshaling null
@@ -91,8 +91,8 @@ func TestUint8UnmarshalText(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())
 
-	ret, err := o.Get()
-	assert.NilError(t, err)
+	ret, ok := o.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, i, ret)
 
 	// Test unmarshaling null
@@ -139,8 +139,8 @@ func TestUint16UnmarshalText(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())
 
-	ret, err := o.Get()
-	assert.NilError(t, err)
+	ret, ok := o.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, i, ret)
 
 	// Test unmarshaling null
@@ -187,8 +187,8 @@ func TestUint32UnmarshalText(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())
 
-	ret, err := o.Get()
-	assert.NilError(t, err)
+	ret, ok := o.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, i, ret)
 
 	// Test unmarshaling null
@@ -235,8 +235,8 @@ func TestUint64UnmarshalText(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())
 
-	ret, err := o.Get()
-	assert.NilError(t, err)
+	ret, ok := o.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, i, ret)
 
 	// Test unmarshaling null

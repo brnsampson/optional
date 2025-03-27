@@ -29,8 +29,8 @@ func (o Float32) String() string {
 	if o.IsNone() {
 		return "None[Float32]"
 	} else {
-		tmp, err := o.Get()
-		if err != nil {
+		tmp, ok := o.Get()
+		if !ok {
 			return "Error[Float32]"
 		}
 		return strconv.FormatFloat(float64(tmp), 'g', -1, 32)
@@ -41,7 +41,11 @@ func (o Float32) MarshalText() (text []byte, err error) {
 	if o.IsNone() {
 		return []byte("None"), nil
 	} else {
-		tmp, err := o.Get()
+		tmp, ok := o.Get()
+		var err error
+		if !ok {
+			err = optionalError("Attempted to Get Option with None value")
+		}
 		return []byte(strconv.FormatFloat(float64(tmp), 'g', -1, 32)), err
 	}
 }
@@ -85,8 +89,8 @@ func (o Float64) String() string {
 	if o.IsNone() {
 		return "None[Float64]"
 	} else {
-		tmp, err := o.Get()
-		if err != nil {
+		tmp, ok := o.Get()
+		if !ok {
 			return "Error[Float64]"
 		}
 		return strconv.FormatFloat(tmp, 'g', -1, 64)
@@ -97,7 +101,11 @@ func (o Float64) MarshalText() (text []byte, err error) {
 	if o.IsNone() {
 		return []byte("None"), nil
 	} else {
-		tmp, err := o.Get()
+		tmp, ok := o.Get()
+		var err error
+		if !ok {
+			err = optionalError("Attempted to Get Option with None value")
+		}
 		return []byte(strconv.FormatFloat(tmp, 'g', -1, 64)), err
 	}
 }

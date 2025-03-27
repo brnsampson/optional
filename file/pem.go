@@ -169,9 +169,9 @@ func (o pemFile) ReadBlocks() (blocks []*pem.Block, err error) {
 		return
 	}
 	if valid != true {
-		tmp, err := o.Get()
-		if err != nil {
-			return blocks, fmt.Errorf("ReadBlocks failed: %s. Was the path set?", err)
+		tmp, ok := o.Get()
+		if !ok {
+			return blocks, fileOptionError("ReadBlocks failed: Path was not set.")
 		}
 		return blocks, fmt.Errorf("ReadBlocks failed for file %s: Expected file permissions %o", tmp, o.setPerms)
 	}
@@ -257,8 +257,8 @@ func (o Cert) String() string {
 	if o.IsNone() {
 		return "None[Cert]"
 	} else {
-		tmp, err := o.Get()
-		if err != nil {
+		tmp, ok := o.Get()
+		if !ok {
 			return "Error[Cert]"
 		}
 		return tmp
@@ -325,8 +325,8 @@ func (o PubKey) String() string {
 	if o.IsNone() {
 		return "None[PubKey]"
 	} else {
-		tmp, err := o.Get()
-		if err != nil {
+		tmp, ok := o.Get()
+		if !ok {
 			return "Error[PubKey]"
 		}
 		return tmp
@@ -414,8 +414,8 @@ func (o PrivateKey) String() string {
 	if o.IsNone() {
 		return "None[PrivateKey]"
 	} else {
-		tmp, err := o.Get()
-		if err != nil {
+		tmp, ok := o.Get()
+		if !ok {
 			return "Error[PrivateKey]"
 		}
 		return tmp
@@ -459,18 +459,18 @@ func (o PrivateKey) ReadCert(in Cert) (cert tls.Certificate, err error) {
 		return
 	}
 
-	keyFile, err := o.Get()
-	if err != nil {
-		return
+	keyFile, ok := o.Get()
+	if !ok {
+		return cert, fileOptionError("ReadCert failed: Keyfile path was not set.")
 	}
 
-	if valid != true {
+	if !valid {
 		return cert, fmt.Errorf("PrivateKey.ReadCert failed for file %s: Expected file permissions %o", keyFile, o.pemFile.setPerms)
 	}
 
-	certFile, err := in.Get()
-	if err != nil {
-		return
+	certFile, ok := in.Get()
+	if !ok {
+		return cert, fileOptionError("ReadBlocks failed: Certificate path was not set.")
 	}
 
 	return tls.LoadX509KeyPair(certFile, keyFile)

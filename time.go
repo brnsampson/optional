@@ -56,8 +56,8 @@ func (o Time) String() string {
 	if o.IsNone() {
 		return "None[Time]"
 	} else {
-		tmp, err := o.Get()
-		if err != nil {
+		tmp, ok := o.Get()
+		if !ok {
 			return "Error[Time]"
 		}
 		return tmp.Format(o.formats[0])
@@ -68,7 +68,11 @@ func (o Time) MarshalText() (text []byte, err error) {
 	if o.IsNone() {
 		return []byte("None"), nil
 	} else {
-		tmp, err := o.Get()
+		tmp, ok := o.Get()
+		var err error
+		if !ok {
+			err = optionalError("Attempted to Get Option with None value")
+		}
 		return []byte(tmp.Format(o.formats[0])), err
 	}
 }

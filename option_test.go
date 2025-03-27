@@ -30,7 +30,7 @@ func TestOptionalClone(t *testing.T) {
 	clone := o.Clone()
 	o.Replace(49)
 	assert.Assert(t, clone.IsSome())
-	assert.Equal(t, 42, optional.Must(clone))
+	assert.Equal(t, 42, clone.MustGet())
 }
 
 func TestMutableOptionalMutableClone(t *testing.T) {
@@ -39,21 +39,20 @@ func TestMutableOptionalMutableClone(t *testing.T) {
 	clone := op.MutableClone()
 	clone.Replace(49)
 	assert.Assert(t, op.IsSome())
-	assert.Equal(t, 42, optional.Must(op))
+	assert.Equal(t, 42, op.MustGet())
 }
 
 func TestOptionBasics(t *testing.T) {
 	// Covers IsSome, IsNone, Clear, Replace, and Get
 	val := 42
 	val2 := 49
-	errString := "Attempted to Get Option with None value"
 
 	o := optional.Some(val)
 	assert.Assert(t, o.IsSome())
 	assert.Assert(t, !o.IsNone())
 
-	tmp, err := o.Get()
-	assert.NilError(t, err)
+	tmp, ok := o.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, val, tmp)
 	assert.Assert(t, o.IsSome())
 	assert.Assert(t, !o.IsNone())
@@ -62,8 +61,8 @@ func TestOptionBasics(t *testing.T) {
 	assert.Assert(t, !o.IsSome())
 	assert.Assert(t, o.IsNone())
 
-	tmp, err = o.Get()
-	assert.Error(t, err, errString)
+	tmp, ok = o.Get()
+	assert.Assert(t, !ok)
 
 	replaced, err := o.Replace(val2)
 	assert.NilError(t, err)
@@ -71,8 +70,8 @@ func TestOptionBasics(t *testing.T) {
 	assert.Assert(t, o.IsSome())
 	assert.Assert(t, !o.IsNone())
 
-	tmp, err = o.Get()
-	assert.NilError(t, err)
+	tmp, ok = o.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, val2, tmp)
 }
 
@@ -122,8 +121,8 @@ func TestOptionTransform(t *testing.T) {
 	err = o.Transform(transform)
 	assert.NilError(t, err)
 
-	tmp, err := o.Get()
-	assert.NilError(t, err)
+	tmp, ok := o.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, after_val, tmp)
 
 	// transforming with a function that produces an error should return the same error
@@ -131,8 +130,8 @@ func TestOptionTransform(t *testing.T) {
 	assert.Error(t, err, err_string)
 
 	// The error should prevent the transform from actually being applied
-	tmp, err = o.Get()
-	assert.NilError(t, err)
+	tmp, ok = o.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, after_val, tmp)
 }
 

@@ -28,7 +28,8 @@ type Optional[T comparable] interface {
 	IsSome() bool
 	IsNone() bool
 	Clone() Optional[T]
-	Get() (T, error)
+	Get() (val T, ok bool)
+	MustGet() T
 	Match(T) bool
 	// Satisfies encoding.json.Marshaler
 	MarshalJSON() ([]byte, error)
@@ -66,11 +67,11 @@ type LoadableOptional[T primatives] interface {
 
 // IsSomeAnd returns true if the Option has a value of Some(x) and f(x) == true
 func IsSomeAnd[T comparable](opt Option[T], f func(T) bool) bool {
-	tmp, err := opt.Get()
-	if err != nil {
-		return false
-	} else {
+	tmp, ok := opt.Get()
+	if ok {
 		return f(tmp)
+	} else {
+		return false
 	}
 }
 
@@ -82,8 +83,8 @@ func Equal[T comparable, O Optional[T]](left, right O) bool {
 	if left.IsNone() && right.IsNone() {
 		return true
 	} else if left.IsSome() && right.IsSome() {
-		tmp, err := left.Get()
-		if err != nil {
+		tmp, ok := left.Get()
+		if !ok {
 			return false
 		}
 
@@ -127,49 +128,39 @@ func ClearIfMatch[T comparable](opt MutableOptional[T], probe T) {
 	}
 }
 
-// Must just calls Get, but panic instead of producing an error.
-func Must[T comparable](opt Optional[T]) T {
-	res, err := opt.Get()
-	if err != nil {
-		panic("Attempted to call Must on an Optional with None value")
-	} else {
-		return res
-	}
-}
-
 // GetOr is the same as Get, but will return the passed value instead of an error if the Option is None. Another convenience
 // function
 func GetOr[T comparable](opt Optional[T], val T) T {
-	res, err := opt.Get()
-	if err != nil {
-		return val
-	} else {
+	res, ok := opt.Get()
+	if ok {
 		return res
+	} else {
+		return val
 	}
 }
 
 // GetOrElse calls Get(), but run the passed function and return the result instead of producing an error if the option
 // is None.
 func GetOrElse[T comparable](opt Optional[T], f func() T) T {
-	res, err := opt.Get()
-	if err != nil {
-		return f()
-	} else {
+	res, ok := opt.Get()
+	if ok {
 		return res
+	} else {
+		return f()
 	}
 }
 
 // GetOrInsert calls Get, but will call Replace on the passed value then return it if the Option is None
 func GetOrInsert[T comparable](opt MutableOptional[T], val T) (T, error) {
-	res, err := opt.Get()
+	res, ok := opt.Get()
 
-	if err != nil {
-		if _, err = opt.Replace(val); err != nil {
+	if ok {
+		return res, nil
+	} else {
+		if _, err := opt.Replace(val); err != nil {
 			return val, err
 		}
 		return val, nil
-	} else {
-		return res, nil
 	}
 }
 

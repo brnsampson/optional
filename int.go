@@ -29,8 +29,8 @@ func (o Int) String() string {
 	if o.IsNone() {
 		return "None[Int]"
 	} else {
-		tmp, err := o.Get()
-		if err != nil {
+		tmp, ok := o.Get()
+		if !ok {
 			return "Error[Int]"
 		}
 		return strconv.Itoa(tmp)
@@ -41,7 +41,11 @@ func (o Int) MarshalText() (text []byte, err error) {
 	if o.IsNone() {
 		return []byte("None"), nil
 	} else {
-		tmp, err := o.Get()
+		tmp, ok := o.Get()
+		var err error
+		if !ok {
+			err = optionalError("Attempted to Get Option with None value")
+		}
 		return []byte(strconv.Itoa(tmp)), err
 	}
 }
@@ -85,8 +89,8 @@ func (o Int8) String() string {
 	if o.IsNone() {
 		return "None[Int8]"
 	} else {
-		tmp, err := o.Get()
-		if err != nil {
+		tmp, ok := o.Get()
+		if !ok {
 			return "Error[Int8]"
 		}
 		return strconv.FormatInt(int64(tmp), 10)
@@ -97,7 +101,11 @@ func (o Int8) MarshalText() (text []byte, err error) {
 	if o.IsNone() {
 		return []byte("None"), nil
 	} else {
-		tmp, err := o.Get()
+		tmp, ok := o.Get()
+		var err error
+		if !ok {
+			err = optionalError("Attempted to Get Option with None value")
+		}
 		return []byte(strconv.FormatInt(int64(tmp), 10)), err
 	}
 }
@@ -141,8 +149,8 @@ func (o Int16) String() string {
 	if o.IsNone() {
 		return "None[Int16]"
 	} else {
-		tmp, err := o.Get()
-		if err != nil {
+		tmp, ok := o.Get()
+		if !ok {
 			return "Error[Int16]"
 		}
 		return strconv.FormatInt(int64(tmp), 10)
@@ -153,7 +161,11 @@ func (o Int16) MarshalText() (text []byte, err error) {
 	if o.IsNone() {
 		return []byte("None"), nil
 	} else {
-		tmp, err := o.Get()
+		tmp, ok := o.Get()
+		var err error
+		if !ok {
+			err = optionalError("Attempted to Get Option with None value")
+		}
 		return []byte(strconv.FormatInt(int64(tmp), 10)), err
 	}
 }
@@ -197,8 +209,8 @@ func (o Int32) String() string {
 	if o.IsNone() {
 		return "None[Int32]"
 	} else {
-		tmp, err := o.Get()
-		if err != nil {
+		tmp, ok := o.Get()
+		if !ok {
 			return "Error[Int32]"
 		}
 		return strconv.FormatInt(int64(tmp), 10)
@@ -209,7 +221,11 @@ func (o Int32) MarshalText() (text []byte, err error) {
 	if o.IsNone() {
 		return []byte("None"), nil
 	} else {
-		tmp, err := o.Get()
+		tmp, ok := o.Get()
+		var err error
+		if !ok {
+			err = optionalError("Attempted to Get Option with None value")
+		}
 		return []byte(strconv.FormatInt(int64(tmp), 10)), err
 	}
 }
@@ -253,8 +269,8 @@ func (o Int64) String() string {
 	if o.IsNone() {
 		return "None[Int64]"
 	} else {
-		tmp, err := o.Get()
-		if err != nil {
+		tmp, ok := o.Get()
+		if !ok {
 			return "Error[Int64]"
 		}
 		return strconv.FormatInt(tmp, 10)
@@ -265,7 +281,11 @@ func (o Int64) MarshalText() (text []byte, err error) {
 	if o.IsNone() {
 		return []byte("None"), nil
 	} else {
-		tmp, err := o.Get()
+		tmp, ok := o.Get()
+		var err error
+		if !ok {
+			err = optionalError("Attempted to Get Option with None value")
+		}
 		return []byte(strconv.FormatInt(tmp, 10)), err
 	}
 }

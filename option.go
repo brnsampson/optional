@@ -84,24 +84,35 @@ func (o *Option[T]) Clear() {
 // The base Option struct can never return an error from Replace, so it is generally safe to ignore the returned values
 // from this, e.g. calling o.Replace() instead of _, _ = o.Replace().
 func (o *Option[T]) Replace(value T) (Optional[T], error) {
-	tmp, err := o.Get()
+	tmp, ok := o.Get()
 	o.inner = value
 	o.some = true
 
-	if err != nil {
-		// it was None
-		return None[T](), nil
-	} else {
+	if ok {
+		// it was Some
 		return Some(tmp), nil
+	} else {
+		return None[T](), nil
 	}
 }
 
-// Get returns the current wrapped value of a Some value Option and returns an error if the Option is None.
-func (o Option[T]) Get() (T, error) {
+// Get returns the current wrapped value of a Some value Option and an ok value indicating if the Option was Some or
+// None. Note that the wrapped value returned if ok == false if undefined so ALWAYS CHECK.
+func (o Option[T]) Get() (val T, ok bool) {
 	if o.IsSome() {
-		return o.inner, nil
+		return o.inner, true
 	}
-	return o.inner, optionalError("Attempted to Get Option with None value")
+	//return o.inner, optionalError("Attempted to Get Option with None value")
+	return o.inner, false
+}
+
+// MustGet is exactly like get, but panics for None instead of returning an error. This makes for potentially more
+// readable code if paired with Option.IsSome or in a template and gives an exciting sense of danger.
+func (o Option[T]) MustGet() T {
+	if o.IsNone() {
+		panic("Attempted to call MustGet on an Optional with None value")
+	}
+	return o.inner
 }
 
 // Match tests if the inner value of Option == the passed value

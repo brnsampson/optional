@@ -31,8 +31,8 @@ func TestCertGet(t *testing.T) {
 	// an error here doesn't mean our library is broken, just that the path we chose to test with isn't valid.
 	assert.NilError(t, err)
 
-	tmp, err := o.Get()
-	assert.NilError(t, err)
+	tmp, ok := o.Get()
+	assert.Assert(t, ok)
 
 	assert.Equal(t, abs, tmp)
 }
@@ -79,8 +79,8 @@ func TestCertUnmarshalText(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())
 
-	ret, err := o.Get()
-	assert.NilError(t, err)
+	ret, ok := o.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, abs, ret)
 
 	// Test unmarshaling null
@@ -93,8 +93,8 @@ func TestCertUnmarshalText(t *testing.T) {
 	err = o.UnmarshalText([]byte(intCert))
 	assert.NilError(t, err)
 
-	ret, err = o.Get()
-	assert.NilError(t, err)
+	ret, ok = o.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, intAbs, ret)
 }
 
@@ -263,8 +263,8 @@ func TestPubKeyUnmarshalText(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())
 
-	ret, err := o.Get()
-	assert.NilError(t, err)
+	ret, ok := o.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, abs, ret)
 
 	// Test unmarshaling null
@@ -277,8 +277,8 @@ func TestPubKeyUnmarshalText(t *testing.T) {
 	err = o.UnmarshalText([]byte(intPubKey))
 	assert.NilError(t, err)
 
-	ret, err = o.Get()
-	assert.NilError(t, err)
+	ret, ok = o.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, intAbs, ret)
 }
 
@@ -466,8 +466,8 @@ func TestPrivateKeyUnmarshalText(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Assert(t, o.IsSome())
 
-	ret, err := o.Get()
-	assert.NilError(t, err)
+	ret, ok := o.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, abs, ret)
 
 	// Test unmarshaling null
@@ -480,8 +480,8 @@ func TestPrivateKeyUnmarshalText(t *testing.T) {
 	err = o.UnmarshalText([]byte(intPrivateKey))
 	assert.NilError(t, err)
 
-	ret, err = o.Get()
-	assert.NilError(t, err)
+	ret, ok = o.Get()
+	assert.Assert(t, ok)
 	assert.Equal(t, intAbs, ret)
 }
 
