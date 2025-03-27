@@ -8,7 +8,14 @@ Go library for working with optional values
 import "github.com/brnsampson/optional"
 
 // Create an Optional Int with no initial value
-i := optional.NoInt()
+// The zero value of an optional is None
+var i optional.Int
+
+// This also works fine
+i = optional.Int{}
+
+// However, I normally use this functional form for symmetry with creating Options with values, optional.SomeInt(<my int>)
+i = optional.NoInt()
 
 // Check if i is None (empty)
 if i.IsNone() {
@@ -33,6 +40,20 @@ val, ok := i.Get()
 if ok {
   fmt.Println("Got i's value:")
   fmt.Println(val)
+}
+
+// Get i's value or a default value if i is None
+tmp := optional.GetOr(i, 123)
+fmt.Println("Got i's value or 123:")
+fmt.Println(tmp)
+
+// Get i's value or a default value AND set i to the default value if it is used
+tmp, err = optional.GetOrInsert(i, 42)
+if err != nil {
+  fmt.Println("Error while replacing i's value with default")
+} else {
+  fmt.Println("Got i's value which should DEFINITELY be 42:")
+  fmt.Println(tmp)
 }
 
 // Get i's value, but just panic if i is None
@@ -145,7 +166,109 @@ if !valid {
 
 ## How to load certificates and keys
 
-TODO
+```
+import "github.com/brnsampson/optional/file"
+
+// Similarly to the File type, the Cert and PrivateKey types make loading and using optional certificates
+// easier and more intuitive. They both embed the Pem struct, which handles the loading of Pem format files.
+
+// Create a Cert from a flag which requested the user to give the path to the certificate file.
+certfile := file.NoCert()
+if certPath != nil {
+  certfile := file.SomeCert(*certPath)
+}
+
+// We can use all the same methods as the File type above, but it isn't necessary to go through all of the
+// steps individually. The Cert type knows to check that the path is set, the file exists, and that the file permissions
+// are correct as part of loading the certificates.
+//
+// certificates are returned as a []*x509.Certificate from the file now.
+// Incidentally, we could write new certs to the file with certfile.WriteCerts(certs)
+certs, err := certfile.ReadCerts()
+if err != nil {
+  fmt.Println("Error while reading certificates from file:")
+  fmt.Println(err)
+  os.Exit(1)
+}
+
+// Now we want to load a tls certificate. We typically need two files for this, the certificate(s) and private keyfile.
+// Note: this specifically is for PEM format keys. There are other ways to store keys, but we have not yet implemented
+// support for those. We do support most types of PEM encoded keyfiles though.
+
+var privKeyFile file.PrivateKey  // Effectively the same as privKeyFile := file.NoPrivateKey()
+if privKeyPath != nil {
+  privKeyFile = file.SomePrivateKey(*privKeyPath)
+}
+
+// Again, we could manually do all the validity checks but those are also run as part of loading the TLS certificate.
+// cert is of the type *tls.Certificate, not to be confused with *x509Certificate.
+cert, err := privKey.ReadCert()
+if err != nil {
+  fmt.Println("Error while generating TLS certificate from PEM format key/cert files:")
+  fmt.Println(err)
+  os.Exit(1)
+}
+
+// Now we are ready to start up an TLS sever
+tlsConf := tls.Config{
+	Certificates:             []tls.Certificate{cert},
+	MinVersion:               tls.VersionTLS13,
+	CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+	PreferServerCipherSuites: true,
+	CipherSuites: []uint16{
+		tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+		tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+		tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+		tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+	},
+}
+
+httpServ := &http.Server{
+	Addr:         addr,
+	TLSConfig:    tlsConf,
+}
+
+// The parameters ListenAndServeTLS takes are the cert file and keyfile, which may lead you to ask, "why did we bother
+// with all of this then?" Essentially, we were able to do all of our validation and logic with our configuration
+// loading and can put our http server somewhere that makes more sense without just getting panics in our server code
+// when the user passes us an invalid path or something. We are also able to get more granular error messages than just
+// "the server is panicing for some reason."
+if e := httpServ.ListenAndServeTLS("", ""); e != nil {
+  fmt.Println("TLS server exited")
+  fmt.Println(err)
+}
+
+// In some situations you actually want to use a public/private keypair for signing instead.
+// Here is how we would load those:
+var privKeyFile file.PrivateKey  // Effectively the same as privKeyFile := file.NoPrivateKey()
+if privKeyPath != nil {
+  privKeyFile = file.SomePrivateKey(*privKeyPath)
+}
+
+var pubKeyFile file.PubKey  // Effectively the same as pubKeyFile := file.NoPubKey()
+if pubKeyPath != nil {
+  pubKeyFile = file.SomePubKey(*pubKeyPath)
+}
+
+// NOTE: as is usually the case with golang key loading, this returns pubKey as a []any and you have to kind of
+// just know how to handle it yourself.
+pubKeys, err := pubKeyFile.ReadPublicKeys()
+if err != nil {
+  fmt.Println("Error while reading public key(s) from file:")
+  fmt.Println(err)
+  os.Exit(1)
+}
+
+// While a public key file may have multiple public keys, private key files should only have a single key. This
+// key is also returned as an any type which you will then need to sort out how to use just like any other key
+// loading.
+privKey, err := privKeyFile.ReadPrivateKey()
+if err != nil {
+  fmt.Println("Error while reading private key from file:")
+  fmt.Println(err)
+  os.Exit(1)
+}
+```
 
 ## What?
 
