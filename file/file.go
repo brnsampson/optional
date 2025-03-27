@@ -112,14 +112,14 @@ func (o File) Exists() bool {
 	}
 }
 
-func (o File) FilePermsValid(badBits fs.FileMode) (bool, error) {
+func (o File) FilePermsValid(goodBits fs.FileMode) (bool, error) {
 	stat, err := o.Stat()
 	if err != nil {
 		return false, err
 	}
 
 	mode := stat.Mode()
-	if (mode & badBits) == 0 {
+	if (mode & goodBits) == 0 {
 		// mode does not include one of the flags --x-wx-wx
 		return true, nil
 	}

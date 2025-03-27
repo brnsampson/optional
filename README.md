@@ -2,6 +2,151 @@
 
 Go library for working with optional values
 
+## How to use
+
+```
+import "github.com/brnsampson/optional"
+
+// Create an Optional Int with no initial value
+i := optional.NoInt()
+
+// Check if i is None (empty)
+if i.IsNone() {
+  fmt.Println("i is empty!")
+}
+
+// Set the value to 42
+i = optional.SomeInt(42)
+// or
+err := i.Replace(42)
+if err != nil {
+  fmt.Println("Hit an error while replacing the value of i!")
+}
+
+// Check if i has a value
+if i.IsSome() {
+  fmt.Println("i has a value!")
+}
+
+// Get i's value along with an 'ok' boolean telling us if the read is valid
+val, ok := i.Get()
+if ok {
+  fmt.Println("Got i's value:")
+  fmt.Println(val)
+}
+
+// Get i's value, but just panic if i is None
+val = i.MustGet()
+
+// For functions that automatically convert types into their string representation, the Option can be used directly:
+fmt.Println("Printing i directly:")
+fmt.Println(i)
+
+// Modify i's value without having to unwrap it, do your thing, then re-wrap it. None's are not modified.
+transform := func(x int) (int, error) { return x + 5, nil }
+err = i.Transform(transform)
+if err != nil {
+  fmt.Println("Transformer function returned an error!")
+}
+
+// There is a helper function for if you want to replace all None values with a default value (the transformation
+// is not applied to the default value)
+err := optional.TransformOr(&o, transform, def)
+if err != nil {
+  fmt.Println("Transformer function returned an error OR a None value could not be updated to the default!")
+}
+
+// We can check to make sure i is now 42 + 5 + 5 = 52
+if i.Match(52) {
+  fmt.Println("i was indeed 52!")
+} else {
+  fmt.Println("uh-oh, what happened?")
+}
+
+// I won't show it here, but Json marshaling/unmarshaling works exactly as you would expect: null maps to None and
+// any other value 'x' maps to Some(x)
+
+// Other primative types work in the same manner, but the types of all method/function parameters are changed
+// as you would expect.
+```
+
+## How to use the file package
+
+```
+import "github.com/brnsampson/optional"
+import "github.com/brnsampson/optional/file"
+
+// However we got it, we either have or do not have a path. For our example, let's assume we loaded this from a
+// flag so we end up with a *string which could be nil
+
+f := file.NoFile()
+if path != nil {
+  f = file.SomeFile(*path)
+}
+
+// Read back the path
+p, ok := f.Get()
+if ok {
+  fmt.Println("Got path:")
+  fmt.Println(p)
+} else {
+  fmt.Println("No path given!")
+  os.Exit(1)
+}
+
+// Check if the given path is the same as some other path, matching all equivalent absolute and relative paths.
+// In this case, check if the given path is equivalent to our working directory.
+if f.Match(".") {
+  fmt.Println("We are operating on our working directory. Be careful!")
+}
+
+// Get a new optional with any relative path converted to absolute path (also ensuring it is a valid path)
+abs, err := f.Abs()
+if err != nil {
+  fmt.Println("Could not convert path into absolute path. Is it a valid path?")
+  os.Exit(1)
+}
+
+// Stat the file, or just check if it exists if you don't care about other file info
+// info, err := abs.Stat() // I don't care about the info
+var opened *os.File
+if abs.Exists() {
+  opened, err = abs.Open()
+  if err != nil {
+    fmt.Println("Failed to open file:")
+    fmt.Println(err)
+    os.Exit(1)
+  }
+} else {
+  opened, err = abs.Create()
+  if err != nil {
+    fmt.Println("Failed to create new file:")
+    fmt.Println(err)
+    os.Exit(1)
+  }
+}
+defer opened.Close()
+
+// Check that the file has permissions 700 and modify it if it does not
+valid, err := abs.FilePermsValid(0700)
+if err != nil {
+  fmt.Println("Could not read file permissions!")
+  os.Exit(1)
+}
+
+if !valid {
+  err = abs.SetFilePerms(0700)
+  if err != nil {
+    fmt.Println("Failed to set file perms to 700")
+    os.Exit(1)
+  }
+}
+```
+
+## How to load certificates and keys
+
+TODO
+
 ## What?
 
 Have you ever needed to represent "something or nothing"? It's common in go to use a pointer for this, but in some
@@ -42,7 +187,7 @@ are is a lot of boilerplate for what it does, but nothing is going to go wrong a
 world project without needing any complicated additional libraries involved. Don't get me wrong, Cobra and Viper are
 super powerful and well maintained, but 98% of the time I only really want one command per executable and every time I
 touch Cobra or Viper I spend at least half an hour reading through documentation. Why bother for the vast majority of my
-work what just involves [stupid things](https://github.com/brnsampson/go-partyparrot) like a slack-bot to render text
+public work just involves [stupid things](https://github.com/brnsampson/go-partyparrot) like a slack-bot to render text
 as [party parrots](https://cultofthepartyparrot.com/)?
 
 Note that while this looks like a lot of code for what it does, it does have a good set of functionality for a small project:
@@ -105,7 +250,7 @@ by the ones I am aware of, however.
 #### Cons
 
 - Generic over `any`, so things like equality can't be supported
-- I don't know if using an internal array is any more efficient than a boolean to represent Some/None
+- I don't know if using an internal array is any more efficient than a boolean or pointer to represent Some/None
 - The Marshaling/Unmarshaling uses the zero values to represent None instead of `null`, removing much of the benefit there
 - Methods like `String()` uses Sprintf, which uses reflection. There is poor performance, then there is reflection performance.
 
@@ -123,6 +268,8 @@ a string field where an empty string would be meaningless.
 
 - You don't always an invalid value to use as your magic value, so it's just impossible sometimes.
 - Ergonomics can get messy; different libraries may return different magic values which you have to translate between
+- I hope you are documenting all of your magic numbers somewhere, because if anyone else looks at your code (including
+  you in 6 months), they probably will have to go code spelunking to understand what is happening.
 
 ### Pointers
 
@@ -137,31 +284,35 @@ a string field where an empty string would be meaningless.
 - Makes for more difficult to read and reason about code at a surprisingly low level of complexity
 - If you every pass a struct by value your invariants can be broken by methods modifying some fields only in the copied struct
   and others in the copied and original struct. You need to be _very_ careful if you do that.
+- Encourages the "make everything a pointer" style, which encourages wishing you were using another language that
+  doesn't require 10 nil checks in every function.
 
 ### This package
 
 #### Pros
 
-- Ergonomics pretty good
+- Ergonomics pretty good. Built with merging values from multiple sources together, marshaling, and templating in mind
 - No surprises
-- Generic implementation means all types can be used in the same way
-- Methods for performing transforms on data without extracting it first
-- Specialized optional types can be built on top to provide any needed functionality for specific use cases.
+- Generic implementation means all derivative Option types can be used in the same way
+- Methods for performing transforms on data without extracting it first, which is nice in loops
+- Specialized optional types can be built on top to provide any needed functionality for specific use cases. Look at the
+  file sub-package for an example.
 
 #### Cons
 
-- Inefficient in terms of space and performance
-- Core `Option` type is limited in implementing convenient stdlib interfaces due to the use of generics.
+- A bit inefficient in terms of space and performance
+- Core `Option` type is unable to implement some convenient stdlib interfaces due to the use of generics.
 - To make the thing more useful, only `comparable` values can be wrapped currently. This isn't usually too big of a
   deal for most _values_, but does mean that you cannot create an array option for example
-  (but why would you do that?!? Just check for zero len!)
+  (but why would you do that?!? Just check for zero length!)
 
-## Why?
+## Why? or: the BS configuration manifesto
 
 There are many great things about golang, but being spoiled by choice is not typically one of them.
 
 Not that there is anything wrong with having a good stdlib implementation that can actually be used in prod or there
-is a lack of good libraries available; I mean there is literally no good way to represent "maybe a thing".
+is a lack of good libraries available; I mean there is literally no good way to represent "maybe a thing". If TypeScript
+can have Optional values, why can't we?
 
 Sure, you can get by in most cases with a pointer. This is, in fact, the most performant way to do this. I do it all the time.
 
@@ -189,39 +340,49 @@ environment distilled into their own little files. Humans developed environment 
 they are really good at solving those problems!
 
 The wild west: Use YAML, TOML, JSON, BSON, JSON5, Consul, Vault, Zookeeper, etcd, whatever bad distributed key/value
-store your company implemented on top of redis, or even DynoDB if you are a psycopath. I'm not gunna sweat it, because
+store your company implemented on top of redis, or even DynamoDB if you are a psycopath. I'm not gunna sweat it, because
 if you use flags and env vars properly the only things that cares about this stuff is your application and I, as an
-infrastructure engineer, am never going to have to interact with this. As long as you don't break your own config then
+dis-interested third party, am never going to have to interact with this. As long as you don't break your own config then
 ask me to fix it. You can do that, I suppose, but know that some poor person that is taking time out of keeping that
 old elasticsearch cluster alive for one more day is judging you hard.
 
 Actually, on second thought just use TOML or whatever the company told you to use. You're probably just using it for
-boolean feature flags anyways.
+boolean feature flags, a listening address, and anyways.
 
 ## FAQ's
 
-### Why do you even have Unwrap()? It seems like a less convenient version of Get().
+### What happens if I have a pointer to an Option?
 
-Yep. On the one hand, I like the idea of options being values. They could be passed around and referenced easily without
-worrying about consequences.
+It acts like a pointer to any other value. It is equally useful as a pointer to an int, though, so I wouldn't recommend
+it.
 
-In practice, I find I actually need pointers to options most of the time. They are things meant to be consumed rather than
-passed around a lot, and as such when the thing that actually needs them uses them, I don't really want them to stick
-around going forward.
+In practice, I don't find that I actually need pointers to options very often. They are things meant to be calculated
+once then immutably consumed rather than having a value mutated in a bunch of places. We have some source of truth which
+we are trying to represent to different parts of our code, marshal and send over the wire, or cache/invalidate a local
+state of that source. Values work just fine for that.
 
-As an example, consider a situation where you have a single config loader generating a nested config which includes
-pointers. Maybe one field of your config is a sub-config meant for one component or domain of your application. If that
-struct has pointer fields, then even if the struct is passed into your component by value there will be another pointer
-floating around and accessible in your other code. That _should_ be okay, right? Surely nothing else will call a method
-on the main config struct that might modify its fields right?
+The one exception would be if you have a very large struct which you want to wrap in an Option. Accepting very large
+things through a function call may not perform the way you want, in which case you could use a `*Option[MyStruct]` the
+same way you might use a `*MyStruct`.
 
-Well, maybe we should just make that a pointer so that we can nil it out after the component consumes its config. That
-works, but now we have a nil pointer floating around and something else can still call methods on the main struct to modify
-fields. Did you check that pointer _everywhere_ to make sure you are not dereferencing it when it's nil? Are you _sure_?
+### What about a pointer to a struct which contains an Option?
 
-Well hey, just make the field an Optional and when the component consumes its part it can call Unwrap() to get the inner
-value and the rest of the struct just has a None Optional left. It has all the same methods and code has to handle the
-errors returned just like normal, but now it won't cause an unhandled panic if you lose focus for more than 10 seconds!
+It acts like any other value.
+
+### What about an Option of a pointer?
+
+That's tricky. It has all the same dangers as passing by value a struct with pointer fields. While it is technically
+possible, I don't recommend it unless you have a very specific need and know your foot guns well.
+
+Be aware that if you _do_ put a pointer inside an Option, `nil` _is a valid value and is NOT None_. This means that if
+you call `myOption.IsNone` does not tell you if the inner value is a nil pointer.
+
+Additionally, I bet there are complications with marshaling/unmarshaling. Would a json `null` unmarshal to a None-value
+Option, or a Some-value Option with the value being a `nil` pointer? I'm not sure, and I'm not taking the time to think
+about it.
+
+You could make a specific Pointer derivative of the Option type that handles that sort of thing, but I just don't
+know what the use case would be where you couldn't just use a pointer on it's own. I certainly don't plan on doing that.
 
 ### Why didn't you just wrap a pointer then do the right thing? Isn't copying things around by value all the time expensive?
 
