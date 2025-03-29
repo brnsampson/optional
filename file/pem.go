@@ -131,11 +131,11 @@ func (o *pemFile) Set(str string) error {
 	return o.UnmarshalText([]byte(str))
 }
 
-// Override the inner Replace() method to ensure we only save absolute paths to our certificates
-func (o *pemFile) Replace(path string) (optional.Optional[string], error) {
+// Override the inner Replace() method to convert path to absolute paths if possible
+func (o *pemFile) Replace(path string) optional.Optional[string] {
 	abs, err := filepath.Abs(path)
 	if err != nil {
-		return optional.None[string](), err
+		return o.File.Replace(path)
 	}
 
 	return o.File.Replace(abs)
@@ -146,10 +146,7 @@ func (o *pemFile) UnmarshalText(text []byte) error {
 	if tmp == "None" || tmp == "none" || tmp == "null" || tmp == "nil" {
 		return o.File.UnmarshalText(text)
 	} else {
-		_, err := o.Replace(tmp)
-		if err != nil {
-			return err
-		}
+		_ = o.Replace(tmp)
 	}
 
 	return nil
@@ -168,7 +165,7 @@ func (o pemFile) ReadBlocks() (blocks []*pem.Block, err error) {
 	if err != nil {
 		return
 	}
-	if valid != true {
+	if !valid {
 		tmp, ok := o.Get()
 		if !ok {
 			return blocks, fileOptionError("ReadBlocks failed: Path was not set.")
@@ -204,7 +201,7 @@ func (o pemFile) WriteBlocks(blocks []*pem.Block) error {
 	if err != nil {
 		return err
 	}
-	if valid != true {
+	if !valid {
 		err := o.SetFilePerms()
 		if err != nil {
 			return err

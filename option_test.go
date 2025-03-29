@@ -43,9 +43,10 @@ func TestMutableOptionalMutableClone(t *testing.T) {
 }
 
 func TestOptionBasics(t *testing.T) {
-	// Covers IsSome, IsNone, Clear, Replace, and Get
+	// Covers IsSome, IsNone, Clear, Default, Replace, and Get
 	val := 42
 	val2 := 49
+	val3 := 66
 
 	o := optional.Some(val)
 	assert.Assert(t, o.IsSome())
@@ -64,15 +65,18 @@ func TestOptionBasics(t *testing.T) {
 	tmp, ok = o.Get()
 	assert.Assert(t, !ok)
 
-	replaced, err := o.Replace(val2)
-	assert.NilError(t, err)
-	assert.Assert(t, replaced.IsNone())
+	o.Default(val2)
+	assert.Assert(t, o.IsSome())
+	assert.Assert(t, !o.IsNone())
+
+	replaced := o.Replace(val3)
+	assert.Assert(t, replaced.Match(val2))
 	assert.Assert(t, o.IsSome())
 	assert.Assert(t, !o.IsNone())
 
 	tmp, ok = o.Get()
 	assert.Assert(t, ok)
-	assert.Equal(t, val2, tmp)
+	assert.Equal(t, val3, tmp)
 }
 
 func TestOptionMatch(t *testing.T) {

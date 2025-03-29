@@ -41,7 +41,8 @@ type MutableOptional[T comparable] interface {
 
 	MutableClone() MutableOptional[T]
 	Clear()
-	Replace(T) (Optional[T], error)
+	Default(T) (replaced bool)
+	Replace(T) Optional[T]
 	// Transform only applies the func to the values of Some valued Optionals. Any mapping of None is None.
 	Transform(f Transformer[T]) error
 	// Satisfies encoding.json.UnMarshaler
@@ -58,10 +59,10 @@ type LoadableOptional[T primatives] interface {
 	// Along with String(), implements flag.Value and pflag.Value
 	Type() string
 	Set(string) error
+	// Satisfies the encoding.TextMarshaler
+	MarshalText() (text []byte, err error)
 	// Satisfies encoding.TextUnmarshaler
 	UnmarshalText(text []byte) error
-	// Satisfies encoding.TextMarshaler
-	MarshalText() (text []byte, err error)
 	// json.Marshaler and json.Unmarshaler are implemented by the embedded MutableOptional interface
 }
 
@@ -150,26 +151,20 @@ func GetOrElse[T comparable](opt Optional[T], f func() T) T {
 	}
 }
 
-// GetOrInsert calls Get, but will call Replace on the passed value then return it if the Option is None
+// GetOrInsert calls Get, but will call Default on the passed value then return it if the Option is None
 func GetOrInsert[T comparable](opt MutableOptional[T], val T) (T, error) {
+	_ = opt.Default(val)
 	res, ok := opt.Get()
 
 	if ok {
 		return res, nil
 	} else {
-		if _, err := opt.Replace(val); err != nil {
-			return val, err
-		}
-		return val, nil
+		panic("Optional did not have value immediately after being set")
 	}
 }
 
 // TransformOr just calls Transform(), except None values are mapped to backup before being transformed.
 func TransformOr[T comparable](opt MutableOptional[T], t Transformer[T], backup T) error {
-	if opt.IsNone() {
-		if _, err := opt.Replace(backup); err != nil {
-			return err
-		}
-	}
+	_ = opt.Default(backup)
 	return opt.Transform(t)
 }

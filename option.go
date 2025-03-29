@@ -80,19 +80,29 @@ func (o *Option[T]) Clear() {
 	o.some = false
 }
 
+// Default is a special case of replace where the value of the option is only changed
+// if the current value is None.
+func (o *Option[T]) Default(value T) (replaced bool) {
+	replaced = false
+	if o.IsNone() {
+		o.inner = value
+		o.some = true
+		replaced = true
+	}
+	return replaced
+}
+
 // Replace converts a Some(x) or None type Option into a Some(value) value.
-// The base Option struct can never return an error from Replace, so it is generally safe to ignore the returned values
-// from this, e.g. calling o.Replace() instead of _, _ = o.Replace().
-func (o *Option[T]) Replace(value T) (Optional[T], error) {
+func (o *Option[T]) Replace(value T) Optional[T] {
 	tmp, ok := o.Get()
 	o.inner = value
 	o.some = true
 
 	if ok {
 		// it was Some
-		return Some(tmp), nil
+		return Some(tmp)
 	} else {
-		return None[T](), nil
+		return None[T]()
 	}
 }
 
