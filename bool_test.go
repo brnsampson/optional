@@ -52,3 +52,14 @@ func TestBoolUnmarshalText(t *testing.T) {
 	err = o.UnmarshalText([]byte(intString))
 	assert.Assert(t, err != nil)
 }
+
+func TestBoolTrue(t *testing.T) {
+	o := optional.NoBool()
+	assert.Assert(t, !o.True())
+
+	o = optional.SomeBool(false)
+	assert.Assert(t, !o.True())
+
+	o = optional.SomeBool(true)
+	assert.Assert(t, o.True())
+}

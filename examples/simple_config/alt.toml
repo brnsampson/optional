@@ -1,4 +1,3 @@
-Host = "host.from.alternate.file"
-
 [SubLoader]
+Host = "host.from.alternate.file"
 Port = 3000

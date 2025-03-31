@@ -62,3 +62,9 @@ func (o *Bool) UnmarshalText(text []byte) error {
 	}
 	return nil
 }
+
+// True returns true iff the value is Some(true). It is a special method exclusive to Bool
+// optionals, and is the same as calling Bool.Match(true).
+func (o *Bool) True() bool {
+	return o.Match(true)
+}

@@ -16,17 +16,18 @@ Note that while this looks like a lot of code for what it does, it does have a g
 set of functionality for a small project:
 
 - Clear precedence of config sources
-- Only basic `flag` library used
+- Works well with other libraries such as `flag`, `pflag`, etc.
 - Flag for debug output
 - Flag to choose config file (including option to skip file loading without needing a separate flag!)
 - Annotations for env var mapping and file loading of the config are defined by the loader struct itself
 - Default values kept directly above config loader structs for easy comparison
-- No super ugly long parameter sets to pass from flag parsing to initialize structs (builder pattern preferred)
+- No super ugly code where we are taking a million flag vars and passing them throughout our whole project.
 - Reloadable, so if you create an init ConfigLoader from flags you can then do hot reloads in response to e.g. a SIGHUP (see examples/simple_config/main.go)
-- No magic hidden in a library you need to look up
+- No magic
 
 If you want to try it, it was written so that the precedence is flags > file > env. The default values in the code are
-{ Host: "localhost", Port: 1443 }.
+{ DevMode: false, LogLevel: "Info", Host: "localhost", Port: 1443, Cert: ../../testing/rsa/cert.pem, Key: ../../testing/rsa/key.pem }.
+These defaults are all just const's at the top of config.go.
 
 Try running it a few different ways and seeing what happens!
 
