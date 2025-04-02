@@ -7,9 +7,9 @@ import (
 	"crypto/ed25519"
 	"crypto/rsa"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/brnsampson/optional/file"
@@ -27,8 +27,7 @@ func TLSCertificate(certPath, keyPath *string) error {
 	if certPath != nil {
 		certFile, err = file.SomeCert(*certPath)
 		if err != nil {
-			fmt.Println("Failed to initialize cert Option")
-			fmt.Println(err)
+			fmt.Println("Failed to initialize cert Option: ", err)
 			return err
 		}
 	}
@@ -41,12 +40,10 @@ func TLSCertificate(certPath, keyPath *string) error {
 	// Incidentally, we could write new certs to the file with certfile.WriteCerts(certs)
 	certs, err := certFile.ReadCerts()
 	if err != nil {
-		fmt.Println("Error while reading certificates from file:")
-		fmt.Println(err)
+		fmt.Println("Error while reading certificates from file: ", err)
 		return err
 	} else {
-		fmt.Println("Found this many certs:")
-		fmt.Println(len(certs))
+		fmt.Println("Found this many certs: ", len(certs))
 	}
 
 	// Now we want to load a tls certificate. We typically need two files for this, the certificate(s) and private keyfile.
@@ -59,8 +56,7 @@ func TLSCertificate(certPath, keyPath *string) error {
 	if keyPath != nil {
 		keyFile, err = file.SomePrivateKey(*keyPath)
 		if err != nil {
-			fmt.Println("Failed to initialize private key Option")
-			fmt.Println(err)
+			fmt.Println("Failed to initialize private key Option: ", err)
 			return err
 		}
 	}
@@ -69,9 +65,8 @@ func TLSCertificate(certPath, keyPath *string) error {
 	// cert is of the type *tls.Certificate, not to be confused with *x509Certificate.
 	cert, err := keyFile.ReadCert(certFile)
 	if err != nil {
-		fmt.Println("Error while generating TLS certificate from PEM format key/cert files:")
-		fmt.Println(err)
-		os.Exit(1)
+		fmt.Println("Error while generating TLS certificate from PEM format key/cert files: ", err)
+		return err
 	}
 
 	fmt.Println("Full *tls.Certificate loaded")
@@ -110,15 +105,14 @@ func TLSCertificate(certPath, keyPath *string) error {
 		haltctx, haltcancel := context.WithTimeout(context.Background(), time.Second)
 		defer haltcancel()
 		if err := httpServ.Shutdown(haltctx); err != nil {
-			fmt.Println("Error haling http server")
-			fmt.Println(err)
+			fmt.Println("Error haling http server: ", err)
 		}
 	}()
 
 	fmt.Println("Starting to listen on https...")
 	if err = httpServ.ListenAndServeTLS("", ""); err != nil {
-		fmt.Println("TLS server exited")
-		fmt.Println(err)
+		// This kind of happens even when things go to plan sometimes, so we don't return an error here.
+		fmt.Println("TLS server exited with error: ", err)
 	}
 
 	return nil
@@ -132,8 +126,7 @@ func SigningKeys(pubPath, privPath *string) error {
 	if privPath != nil {
 		privFile, err = file.SomePrivateKey(*privPath)
 		if err != nil {
-			fmt.Println("Failed to initialize private key Option")
-			fmt.Println(err)
+			fmt.Println("Failed to initialize private key Option: ", err)
 			return err
 		}
 	}
@@ -142,8 +135,7 @@ func SigningKeys(pubPath, privPath *string) error {
 	if pubPath != nil {
 		pubFile, err = file.SomePubKey(*pubPath)
 		if err != nil {
-			fmt.Println("Failed to initialize private key Option")
-			fmt.Println(err)
+			fmt.Println("Failed to initialize private key Option: ", err)
 			return err
 		}
 	}
@@ -152,13 +144,10 @@ func SigningKeys(pubPath, privPath *string) error {
 	// just know how to handle it yourself.
 	pubKeys, err := pubFile.ReadPublicKeys()
 	if err != nil {
-		fmt.Println("Error while reading public key(s) from file:")
-		fmt.Println(err)
-		os.Exit(1)
-	} else {
-		fmt.Println("Found this many public keys:")
-		fmt.Println(len(pubKeys))
+		fmt.Println("Error while reading public key(s) from file: ", err)
 		return err
+	} else {
+		fmt.Println("Found this many public keys: ", len(pubKeys))
 	}
 
 	// While a public key file may have multiple public keys, private key files should only have a single key. This
@@ -166,8 +155,7 @@ func SigningKeys(pubPath, privPath *string) error {
 	// loading.
 	privKey, err := privFile.ReadPrivateKey()
 	if err != nil {
-		fmt.Println("Error while reading private key from file:")
-		fmt.Println(err)
+		fmt.Println("Error while reading private key from file: ", err)
 		return err
 	}
 
@@ -182,7 +170,7 @@ func SigningKeys(pubPath, privPath *string) error {
 	case ed25519.PrivateKey:
 		fmt.Println("key is of type Ed25519:", key)
 	default:
-		panic("unknown type of private key")
+		return errors.New("unknown type of private key")
 	}
 
 	return nil

@@ -47,13 +47,13 @@ func setFilePerms(path string, perms fs.FileMode) error {
 	return nil
 }
 
-func readBlocks(path string, perms, notPerms fs.FileMode) (blocks []*pem.Block, err error) {
+func readBlocks(path string, notPerms fs.FileMode) (blocks []*pem.Block, err error) {
 	valid, err := filePermsValid(path, notPerms)
 	if err != nil {
 		return
 	}
 	if !valid {
-		err = fmt.Errorf("Cannot read blocks from %s: File permissions should be %o", path, PubKeyFilePerms)
+		err = fmt.Errorf("cannot read blocks from %s: File permissions should be %o", path, PubKeyFilePerms)
 		return
 	}
 

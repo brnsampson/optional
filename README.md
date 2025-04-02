@@ -56,12 +56,12 @@ import (
 	// as the previous value is only provided as a reference. Unfortunatly, this also
 	// hides some convenient things like the implemntations of TextMarshaler and Stringer
 	if previous.IsSome() {
-		fmt.Println("Replaced previous value:")
-		fmt.Println(previous.MustGet())
+		fmt.Println("Replaced previous value: ", previous.MustGet())
 	}
 
 	// Overwrite the previous value without care
 	i = optional.SomeInt(42)
+
 ```
 
 </details>
@@ -81,14 +81,13 @@ import (
 	if i.Match(42) {
 		fmt.Println("i was indeed 42!")
 	} else {
-		panic("wtf?")
+		return errors.New("somehow failed to match something that really should have matched")
 	}
 
 	// Get i's value along with an 'ok' boolean telling us if the read is valid
 	val, ok := i.Get()
 	if ok {
-		fmt.Println("Got i's value:")
-		fmt.Println(val)
+		fmt.Println("Got i's value: ", val)
 	}
 
 	// Get i's value, but just panic if i is None
@@ -96,8 +95,7 @@ import (
 
 	// Get i's value or a default value if i is None
 	tmp := optional.GetOr(i, 123)
-	fmt.Println("Got i's value or 123:")
-	fmt.Println(tmp)
+	fmt.Println("Got i's value or 123: ", tmp)
 
 	// Get i's value or a default value AND set i to the default value if it is used
 	// Note that helper functions require a MutableOptional interface, which only Option
@@ -107,14 +105,12 @@ import (
 	if err != nil {
 		fmt.Println("Error while replacing i's value with default")
 	} else {
-		fmt.Println("Got i's value which should DEFINITELY be 42:")
-		fmt.Println(tmp)
+		fmt.Println("Got i's value which should DEFINITELY be 42: ", tmp)
 	}
 
 	// For functions that automatically convert types into their string representation,
 	// the Option can be used directly:
-	fmt.Println("Printing i directly:")
-	fmt.Println(i)
+	fmt.Println("Printing i directly: ", i)
 ```
 
 </details>
@@ -123,36 +119,40 @@ import (
   <summary>Marshaling values</summary>
 
 ```golang
-	// Define our value and transformation first
 	i := optional.SomeInt(42)
 	f := optional.SomeFloat32(12.34)
 	s := optional.SomeStr("Hello!")
 	nope := optional.NoStr()
+	secret := optional.SomeSecret("you should only see this if it is marshaled for the wire!")
 
 	// Let's create a text string first using Sprintf. We can't use more specific verbs like
-	// %d or %f because we have no way to represent None.
-	newString := fmt.Sprintf("i: %s, f: %s, s: %s, nothing: %s", i, f, s, nope)
-	fmt.Println(newString)
+	// %d or %f because we have no way to represent None. Note that our Secret will be redacted.
+	newString := fmt.Sprintf("i: %s, f: %s, s: %s, nothing: %s, secret: %s", i, f, s, nope, secret)
+	fmt.Println("Created a new string from optionals: ", newString)
 
 	// Options do have TextMarshaler and String methods implemented though, so we can equally well use %v
-	newString = fmt.Sprintf("i: %v, f: %v, s: %v, nothing: %v", i, f, s, nope)
-	fmt.Println(newString)
+	newString = fmt.Sprintf("i: %v, f: %v, s: %v, nothing: %v, secret: %v", i, f, s, nope, secret)
+	fmt.Println("Created another new string from optionals: ", newString)
 
 	// Now let's marshal a json string
 	type MyStruct struct {
-		Int        optional.Int
-		Float      optional.Float32
-		GoodString optional.Str
-		BadString  optional.Str
+		Int          optional.Int
+		Float        optional.Float32
+		GoodString   optional.Str
+		BadString    optional.Str
+		SecretString optional.Secret
 	}
 
-	myStruct := MyStruct{i, f, s, nope}
+	myStruct := MyStruct{i, f, s, nope, secret}
 	jsonEncoded, err := json.Marshal(myStruct)
 	if err != nil {
 		fmt.Println("Failed to marshal json from struct!")
-	} else {
-		fmt.Println(string(jsonEncoded))
+		return err
 	}
+
+  // We DO expect our secret to be printed here, as we have explicitly marshaled it into
+  // a byte array.
+	fmt.Println("Json marshaled struct: ", string(jsonEncoded))
 ```
 
 </details>
@@ -169,6 +169,7 @@ import (
 	err := i.Transform(transform)
 	if err != nil {
 		fmt.Println("The transform function returned an error!")
+		return err
 	}
 
 	// Apply our transform to a slice of options, while modifying None values to be their index in the slice.
@@ -182,6 +183,7 @@ import (
 		err = optional.TransformOr(&opt, transform, i)
 		if err != nil {
 			fmt.Println("The transform function returned an error!")
+			return err
 		}
 	}
 ```
@@ -205,11 +207,9 @@ import (
 	// Just read the contents of a file. Acts like os.ReadFile(path)
 	data, err := f.ReadFile()
 	if err != nil {
-		fmt.Println("Failed to read from file:")
-		fmt.Println(err)
+		fmt.Println("Failed to read from file: ", err)
 	} else {
-		fmt.Println("Got file contents:")
-		fmt.Println(string(data))
+		fmt.Println("Got file contents: ", string(data))
 	}
 
 	// Open a file for reading. File.Open() works just like os.Open(path),
@@ -217,13 +217,66 @@ import (
 	var opened *os.File
 	opened, err = f.Open()
 	if err != nil {
-		fmt.Println("Failed to open file for reading:")
-		fmt.Println(err)
-		return
+		fmt.Println("Failed to open file for reading: ", err)
+		return err
 	}
 	defer opened.Close()
 
 	// Now use the file handle exactly as you would if you called os.Open()
+	return nil
+```
+
+</details>
+
+<details>
+  <summary>Loading secrets from files</summary>
+
+```golang
+	// There is a SecretFile type for convenience since this is a common thing to do
+	// in an application. SecretFile simple overrides a few methods of File so that
+	// we get a Secret option out of loading the contents instead of a Str.
+	f := file.NoSecretFile()
+	if path != nil {
+		f = file.SomeSecretFile(*path)
+	}
+
+	// You can also upgrade a File to a SecretFile
+	var normf file.File
+	if path != nil {
+		normf = file.SomeFile(*path)
+	}
+	secretf := file.MakeSecret(&normf)
+
+	// You can still see the filepath and everything for a secret file, but we
+	// do assume some things about secret files such as the premissions allowed.
+	valid, err := secretf.FilePermsValid()
+	if err != nil {
+		fmt.Println("Failed when validating file permissions for secretf!")
+		return err
+	}
+
+	if !valid {
+		fmt.Println("File permissions for a SecretFile were not 0600!")
+	}
+
+	// normf will be cleared as part of upgrading a File to SecretFile
+	if normf.IsNone() {
+		fmt.Println("Sucessfully cleared normal file after upgrading it to a secret file.")
+	}
+
+	// Calling ReadFile() on a SecretFile produces a Secret
+	secret, err := f.ReadFile()
+	if err != nil {
+		fmt.Println("Failed to read from file: ", err)
+	}
+
+	// This is a secret, so we will only see a redacted value when we try to write it
+	// to the console. The same will happen if we try to log it.
+	fmt.Println("Got secret file contents: ", secret)
+
+	// Similarly if we try to use stdlib logging libraries
+	slog.Info("Second try printing secret file contents", "secret", secret)
+	log.Printf("Third try printing secret file contents: %s", secret)
 ```
 
 </details>
@@ -240,16 +293,14 @@ import (
 	// Delete a file. Works like os.Remove, but also returns an error if the path is still None
 	err := f.Remove()
 	if err != nil {
-		fmt.Println("Failed to remove file:")
-		fmt.Println(err)
+		fmt.Println("Failed to remove file: ", err)
 	}
 
 	// Write the contents of a file. Acts like os.WriteFile(path)
 	data := []byte("Hello, World!")
 	err = f.WriteFile(data, 0644)
 	if err != nil {
-		fmt.Println("Failed to write file:")
-		fmt.Println(err)
+		fmt.Println("Failed to write file: ", err)
 	}
 
 	// Open a file for read/write. File.Create() works like like os.Create(path), which means
@@ -259,14 +310,15 @@ import (
 	var opened *os.File
 	opened, err = f.Create()
 	if err != nil {
-		fmt.Println("Failed to open/create file:")
-		fmt.Println(err)
-		return
+		fmt.Println("Failed to open/create file: ", err)
+		return err
 	}
 	defer opened.Close()
 
 	// Now use the file handle exactly as you would if you called os.Create(path)
 	opened.Write(data)
+
+	return nil
 ```
 
 </details>
@@ -283,8 +335,7 @@ import (
 	// Read back the path
 	p, ok := f.Get()
 	if ok {
-		fmt.Println("Got path:")
-		fmt.Println(p)
+		fmt.Println("Got path: ", p)
 	} else {
 		fmt.Println("No path given!")
 		os.Exit(1)
@@ -302,7 +353,7 @@ import (
 	abs, err := f.Abs()
 	if err != nil {
 		fmt.Println("Could not convert path into absolute path. Is it a valid path?")
-		os.Exit(1)
+		return err
 	}
 
 	// Stat the file, or just check if it exists if you don't care about other file info
@@ -314,22 +365,21 @@ import (
 	if err != nil {
 		fmt.Println("Could not stat the file")
 	} else {
-		fmt.Println("Got file info:")
-		fmt.Println(info)
+		fmt.Println("Got file info: ", info)
 	}
 
 	// Check that the file has permissions 700 and modify it if it does not
 	valid, err := abs.FilePermsValid(0644)
 	if err != nil {
 		fmt.Println("Could not read file permissions!")
-		os.Exit(1)
+		return err
 	}
 
 	if !valid {
 		err = abs.SetFilePerms(0644)
 		if err != nil {
 			fmt.Println("Failed to set file perms to 700")
-			os.Exit(1)
+			return err
 		}
 	}
 ```
@@ -353,8 +403,7 @@ import (
 	if certPath != nil {
 		certFile, err = file.SomeCert(*certPath)
 		if err != nil {
-			fmt.Println("Failed to initialize cert Option")
-			fmt.Println(err)
+			fmt.Println("Failed to initialize cert Option: ", err)
 			return err
 		}
 	}
@@ -367,12 +416,10 @@ import (
 	// Incidentally, we could write new certs to the file with certfile.WriteCerts(certs)
 	certs, err := certFile.ReadCerts()
 	if err != nil {
-		fmt.Println("Error while reading certificates from file:")
-		fmt.Println(err)
+		fmt.Println("Error while reading certificates from file: ", err)
 		return err
 	} else {
-		fmt.Println("Found this many certs:")
-		fmt.Println(len(certs))
+		fmt.Println("Found this many certs: ", len(certs))
 	}
 
 	// Now we want to load a tls certificate. We typically need two files for this, the certificate(s) and private keyfile.
@@ -385,8 +432,7 @@ import (
 	if keyPath != nil {
 		keyFile, err = file.SomePrivateKey(*keyPath)
 		if err != nil {
-			fmt.Println("Failed to initialize private key Option")
-			fmt.Println(err)
+			fmt.Println("Failed to initialize private key Option: ", err)
 			return err
 		}
 	}
@@ -395,9 +441,8 @@ import (
 	// cert is of the type *tls.Certificate, not to be confused with *x509Certificate.
 	cert, err := keyFile.ReadCert(certFile)
 	if err != nil {
-		fmt.Println("Error while generating TLS certificate from PEM format key/cert files:")
-		fmt.Println(err)
-		os.Exit(1)
+		fmt.Println("Error while generating TLS certificate from PEM format key/cert files: ", err)
+		return err
 	}
 
 	fmt.Println("Full *tls.Certificate loaded")
@@ -436,18 +481,15 @@ import (
 		haltctx, haltcancel := context.WithTimeout(context.Background(), time.Second)
 		defer haltcancel()
 		if err := httpServ.Shutdown(haltctx); err != nil {
-			fmt.Println("Error haling http server")
-			fmt.Println(err)
+			fmt.Println("Error haling http server: ", err)
 		}
 	}()
 
 	fmt.Println("Starting to listen on https...")
 	if err = httpServ.ListenAndServeTLS("", ""); err != nil {
-		fmt.Println("TLS server exited")
-		fmt.Println(err)
+		// This kind of happens even when things go to plan sometimes, so we don't return an error here.
+		fmt.Println("TLS server exited with error: ", err)
 	}
-
-	return nil
 ```
 
 </details>
@@ -463,8 +505,7 @@ import (
 	if privPath != nil {
 		privFile, err = file.SomePrivateKey(*privPath)
 		if err != nil {
-			fmt.Println("Failed to initialize private key Option")
-			fmt.Println(err)
+			fmt.Println("Failed to initialize private key Option: ", err)
 			return err
 		}
 	}
@@ -473,8 +514,7 @@ import (
 	if pubPath != nil {
 		pubFile, err = file.SomePubKey(*pubPath)
 		if err != nil {
-			fmt.Println("Failed to initialize private key Option")
-			fmt.Println(err)
+			fmt.Println("Failed to initialize private key Option: ", err)
 			return err
 		}
 	}
@@ -483,13 +523,10 @@ import (
 	// just know how to handle it yourself.
 	pubKeys, err := pubFile.ReadPublicKeys()
 	if err != nil {
-		fmt.Println("Error while reading public key(s) from file:")
-		fmt.Println(err)
-		os.Exit(1)
-	} else {
-		fmt.Println("Found this many public keys:")
-		fmt.Println(len(pubKeys))
+		fmt.Println("Error while reading public key(s) from file: ", err)
 		return err
+	} else {
+		fmt.Println("Found this many public keys: ", len(pubKeys))
 	}
 
 	// While a public key file may have multiple public keys, private key files should only have a single key. This
@@ -497,8 +534,7 @@ import (
 	// loading.
 	privKey, err := privFile.ReadPrivateKey()
 	if err != nil {
-		fmt.Println("Error while reading private key from file:")
-		fmt.Println(err)
+		fmt.Println("Error while reading private key from file: ", err)
 		return err
 	}
 
@@ -513,13 +549,25 @@ import (
 	case ed25519.PrivateKey:
 		fmt.Println("key is of type Ed25519:", key)
 	default:
-		panic("unknown type of private key")
+		return errors.New("unknown type of private key")
 	}
-
-	return nil
 ```
 
 </details>
+
+## Secrets
+
+There is a wrapper around optional strings named Secret which comes in handy
+when loading, well, secrets. You still need to use their values in code and
+marshal them into messages as appropriate, but ensuring keys and passwords
+do not end up in your logging system is always a big headache.
+
+Using the Secret type is exactly the same as Str, but the methods used by
+string formatting and logging is overwritten to prevent secrets from being
+logged accidentally.
+
+Some operations, such as loading content from a SecretFile will return
+a Secret instead of a Str to make things easier for you.
 
 ## What?
 

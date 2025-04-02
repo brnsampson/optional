@@ -2,12 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/brnsampson/optional"
 )
 
-func DefiningOptionalValues() {
+func DefiningOptionalValues() error {
 	// There are types for all the primatives we would normally expect
 	// Bool
 	// Int Int16 Int32 Int64
@@ -44,15 +45,16 @@ func DefiningOptionalValues() {
 	// as the previous value is only provided as a reference. Unfortunatly, this also
 	// hides some convenient things like the implemntations of TextMarshaler and Stringer
 	if previous.IsSome() {
-		fmt.Println("Replaced previous value:")
-		fmt.Println(previous.MustGet())
+		fmt.Println("Replaced previous value: ", previous.MustGet())
 	}
 
 	// Overwrite the previous value without care
 	i = optional.SomeInt(42)
+
+	return nil
 }
 
-func InspectingValues() {
+func InspectingValues() error {
 	i := optional.SomeInt(42)
 
 	// Check if i has a value
@@ -64,14 +66,13 @@ func InspectingValues() {
 	if i.Match(42) {
 		fmt.Println("i was indeed 42!")
 	} else {
-		panic("wtf?")
+		return errors.New("somehow failed to match something that really should have matched")
 	}
 
 	// Get i's value along with an 'ok' boolean telling us if the read is valid
 	val, ok := i.Get()
 	if ok {
-		fmt.Println("Got i's value:")
-		fmt.Println(val)
+		fmt.Println("Got i's value: ", val)
 	}
 
 	// Get i's value, but just panic if i is None
@@ -79,8 +80,7 @@ func InspectingValues() {
 
 	// Get i's value or a default value if i is None
 	tmp := optional.GetOr(i, 123)
-	fmt.Println("Got i's value or 123:")
-	fmt.Println(tmp)
+	fmt.Println("Got i's value or 123: ", tmp)
 
 	// Get i's value or a default value AND set i to the default value if it is used
 	// Note that helper functions require a MutableOptional interface, which only Option
@@ -90,49 +90,57 @@ func InspectingValues() {
 	if err != nil {
 		fmt.Println("Error while replacing i's value with default")
 	} else {
-		fmt.Println("Got i's value which should DEFINITELY be 42:")
-		fmt.Println(tmp)
+		fmt.Println("Got i's value which should DEFINITELY be 42: ", tmp)
 	}
 
 	// For functions that automatically convert types into their string representation,
 	// the Option can be used directly:
-	fmt.Println("Printing i directly:")
-	fmt.Println(i)
+	fmt.Println("Printing i directly: ", i)
+
+	return nil
 }
 
-func MarshalingExamples() {
+func MarshalingExamples() error {
 	i := optional.SomeInt(42)
 	f := optional.SomeFloat32(12.34)
 	s := optional.SomeStr("Hello!")
 	nope := optional.NoStr()
+	secret := optional.SomeSecret("you should only see this if it is marshaled for the wire!")
 
 	// Let's create a text string first using Sprintf. We can't use more specific verbs like
-	// %d or %f because we have no way to represent None.
-	newString := fmt.Sprintf("i: %s, f: %s, s: %s, nothing: %s", i, f, s, nope)
-	fmt.Println(newString)
+	// %d or %f because we have no way to represent None. Our Secret will be redacted when priting like this.
+	newString := fmt.Sprintf("i: %s, f: %s, s: %s, nothing: %s, secret: %s", i, f, s, nope, secret)
+	fmt.Println("Created a new string from optionals: ", newString)
 
 	// Options do have TextMarshaler and String methods implemented though, so we can equally well use %v
-	newString = fmt.Sprintf("i: %v, f: %v, s: %v, nothing: %v", i, f, s, nope)
-	fmt.Println(newString)
+	newString = fmt.Sprintf("i: %v, f: %v, s: %v, nothing: %v, secret: %v", i, f, s, nope, secret)
+	fmt.Println("Created another new string from optionals: ", newString)
 
 	// Now let's marshal a json string
 	type MyStruct struct {
-		Int        optional.Int
-		Float      optional.Float32
-		GoodString optional.Str
-		BadString  optional.Str
+		Int          optional.Int
+		Float        optional.Float32
+		GoodString   optional.Str
+		BadString    optional.Str
+		SecretString optional.Secret
 	}
 
-	myStruct := MyStruct{i, f, s, nope}
+	myStruct := MyStruct{i, f, s, nope, secret}
 	jsonEncoded, err := json.Marshal(myStruct)
 	if err != nil {
 		fmt.Println("Failed to marshal json from struct!")
-	} else {
-		fmt.Println(string(jsonEncoded))
+		return err
 	}
+
+	// NOTE: we WILL see the value of our secret here! Normally you would not be re-stringing
+	// a byte array and logging it after marshaling, but it could come up when debugging so
+	// be careful.
+	fmt.Println("Json marshaled struct: ", string(jsonEncoded))
+
+	return nil
 }
 
-func TransformationExamples() {
+func TransformationExamples() error {
 	// Define our value and transformation first
 	i := optional.SomeInt(42)
 	transform := func(x int) (int, error) { return x + 5, nil }
@@ -141,6 +149,7 @@ func TransformationExamples() {
 	err := i.Transform(transform)
 	if err != nil {
 		fmt.Println("The transform function returned an error!")
+		return err
 	}
 
 	// Apply our transform to a slice of options, while modifying None values to be their index in the slice.
@@ -154,6 +163,9 @@ func TransformationExamples() {
 		err = optional.TransformOr(&opt, transform, i)
 		if err != nil {
 			fmt.Println("The transform function returned an error!")
+			return err
 		}
 	}
+
+	return nil
 }
