@@ -129,7 +129,7 @@ func TestCertSetFilePerms(t *testing.T) {
 	o.SetFilePerms()
 	s, err := f.Stat()
 	assert.NilError(t, err)
-	assert.Equal(t, file.PubKeyFilePerms, s.Mode())
+	assert.Equal(t, file.CertFilePerms, s.Mode())
 }
 
 func TestCertReadRSACerts(t *testing.T) {

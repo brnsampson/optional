@@ -1,6 +1,7 @@
 package file_test
 
 import (
+	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -12,10 +13,30 @@ import (
 func TestFileType(t *testing.T) {
 	o := file.SomeFile("/not/a/real/path")
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
+	assert.Assert(t, !o.Exists())
+
+	_, err := o.Stat()
+	assert.ErrorIs(t, err, os.ErrNotExist)
+
+	valid, err := o.FilePermsValid(0600, 0111)
+	assert.ErrorIs(t, err, os.ErrNotExist)
+	assert.Assert(t, !valid)
+
+	path := "../testing/rsa/cert.pem"
+	o = file.SomeFile(path)
+	assert.Assert(t, o.Exists())
+
+	stat, err := o.Stat()
+	assert.NilError(t, err)
+
+	// Make sure it is at least readable/writable by root but not executable.
+	valid, err = o.FilePermsValid(0600, 0111)
+	assert.NilError(t, err)
+	assert.Assert(t, valid, "expected file perms 0644 but found %o", stat.Mode())
 }
 
 func TestFileGet(t *testing.T) {
-	path := "../tls/rsa/cert.pem"
+	path := "../testing/rsa/cert.pem"
 	o := file.SomeFile(path)
 	abs, err := filepath.Abs(path)
 	// an error here doesn't mean our library is broken, just that the path we chose to test with isn't valid.
@@ -34,7 +55,7 @@ func TestFileGet(t *testing.T) {
 }
 
 func TestFileString(t *testing.T) {
-	path := "../tls/rsa/cert.pem"
+	path := "../testing/rsa/cert.pem"
 	noneStr := "None[File]"
 
 	o := file.SomeFile(path)
@@ -46,7 +67,7 @@ func TestFileString(t *testing.T) {
 }
 
 func TestFileMarshalText(t *testing.T) {
-	path := "../tls/rsa/cert.pem"
+	path := "../testing/rsa/cert.pem"
 
 	o := file.SomeFile(path)
 
@@ -56,7 +77,7 @@ func TestFileMarshalText(t *testing.T) {
 }
 
 func TestFileUnmarshalText(t *testing.T) {
-	path := "../tls/rsa/cert.pem"
+	path := "../testing/rsa/cert.pem"
 	nullFile := "null"
 	intFile := "42"
 
@@ -83,4 +104,21 @@ func TestFileUnmarshalText(t *testing.T) {
 	ret, ok = o.Get()
 	assert.Assert(t, ok)
 	assert.Equal(t, intFile, ret)
+}
+
+func TestFileReadFile(t *testing.T) {
+	path := "../testing/rsa/cert.pem"
+	badpath := "does/not/exist.txt"
+	o := file.SomeFile(path)
+
+	str, ok := o.ReadFile()
+	assert.Assert(t, ok)
+	assert.Assert(t, str.IsSome())
+
+	// Test with a file that does not exist
+	o = file.SomeFile(badpath)
+
+	str, ok = o.ReadFile()
+	assert.Assert(t, !ok)
+	assert.Assert(t, str.IsNone())
 }

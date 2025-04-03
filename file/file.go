@@ -8,6 +8,10 @@ import (
 	"github.com/brnsampson/optional"
 )
 
+var (
+	ErrFileNone = fileOptionError("vale of File path is not set")
+)
+
 type FileOptionError struct {
 	msg string
 }
@@ -97,7 +101,7 @@ func (o File) Stat() (stat fs.FileInfo, err error) {
 	path, ok := o.Get()
 	if !ok {
 		// None files don't exist!
-		return
+		return stat, ErrFileNone
 	}
 
 	return os.Stat(path)
@@ -106,31 +110,36 @@ func (o File) Stat() (stat fs.FileInfo, err error) {
 func (o File) Exists() bool {
 	_, err := o.Stat()
 	if err != nil {
-		return true
-	} else {
 		return false
+	} else {
+		return true
 	}
 }
 
-func (o File) FilePermsValid(goodBits fs.FileMode) (bool, error) {
+func (o File) FilePermsValid(include fs.FileMode, exclude fs.FileMode) (bool, error) {
 	stat, err := o.Stat()
 	if err != nil {
 		return false, err
 	}
 
 	mode := stat.Mode()
-	if (mode & goodBits) == 0 {
-		// mode does not include one of the flags --x-wx-wx
-		return true, nil
+	if (mode & include) != include {
+		// mode does not contain all the required flags
+		return false, nil
 	}
 
-	return false, nil
+	if (mode & exclude) != 0 {
+		// mode contains one of the exclided modes
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func (o File) SetFilePerms(mode fs.FileMode) error {
 	path, ok := o.Get()
 	if !ok {
-		return fileOptionError("Attempted to set file permissions on File with None value")
+		return ErrFileNone
 	}
 
 	err := os.Chmod(path, mode)
@@ -143,7 +152,7 @@ func (o File) SetFilePerms(mode fs.FileMode) error {
 func (o File) Remove() error {
 	path, ok := o.Get()
 	if !ok {
-		return fileOptionError("Attempted to open an Optional File with None value")
+		return ErrFileNone
 	}
 
 	return os.Remove(path)
@@ -152,7 +161,7 @@ func (o File) Remove() error {
 func (o File) Open() (*os.File, error) {
 	path, ok := o.Get()
 	if !ok {
-		return nil, fileOptionError("Attempted to open an Optional File with None value")
+		return nil, ErrFileNone
 	}
 
 	return os.Open(path)
@@ -161,7 +170,7 @@ func (o File) Open() (*os.File, error) {
 func (o File) Create() (*os.File, error) {
 	path, ok := o.Get()
 	if !ok {
-		return nil, fileOptionError("Attempted to create Optional File with None value")
+		return nil, ErrFileNone
 	}
 
 	return os.Create(path)
@@ -170,25 +179,34 @@ func (o File) Create() (*os.File, error) {
 func (o File) OpenFile(flag int, perm os.FileMode) (*os.File, error) {
 	path, ok := o.Get()
 	if !ok {
-		return nil, fileOptionError("Attempted to open Optional File with None value")
+		return nil, ErrFileNone
 	}
 
 	return os.OpenFile(path, flag, perm)
 }
 
-func (o File) ReadFile() (data []byte, err error) {
+func (o File) ReadFile() (contents optional.Str, ok bool) {
 	path, ok := o.Get()
 	if !ok {
-		return make([]byte, 0), fileOptionError("Attempted to open Optional File with None value")
+		return optional.NoStr(), false
 	}
 
-	return os.ReadFile(path)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return optional.NoStr(), false
+	}
+
+	if len(data) == 0 {
+		return optional.NoStr(), true
+	}
+
+	return optional.SomeStr(string(data)), true
 }
 
 func (o File) WriteFile(data []byte, perm os.FileMode) (err error) {
 	path, ok := o.Get()
 	if !ok {
-		return fileOptionError("Attempted to open Optional File with None value")
+		return ErrFileNone
 	}
 
 	return os.WriteFile(path, data, perm)

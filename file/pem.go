@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"os"
 	"path/filepath"
 
 	"github.com/brnsampson/optional"
@@ -18,95 +17,14 @@ import (
 // be 0. The mask is only needed because _technically_ I suppose you could make a public key mode 600 or something if you
 // really wanted.
 const (
+	EmptyFilePerms      fs.FileMode = 0000
+	CertFilePerms       fs.FileMode = 0600
+	CertFilePermsMask   fs.FileMode = 0133
 	KeyFilePerms        fs.FileMode = 0600
 	PubKeyFilePerms     fs.FileMode = 0644
 	KeyFilePermsMask    fs.FileMode = 0177
 	PubKeyFilePermsMask fs.FileMode = 0133
 )
-
-func filePermsValid(path string, notValidPerms fs.FileMode) (bool, error) {
-	stat, err := os.Stat(path)
-	if err != nil {
-		return false, err
-	}
-
-	mode := stat.Mode()
-	if (mode & notValidPerms) == 0 {
-		// mode does not include one of the flags --x-wx-wx
-		return true, nil
-	}
-
-	return false, nil
-}
-
-func setFilePerms(path string, perms fs.FileMode) error {
-	err := os.Chmod(path, perms)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func readBlocks(path string, notPerms fs.FileMode) (blocks []*pem.Block, err error) {
-	valid, err := filePermsValid(path, notPerms)
-	if err != nil {
-		return
-	}
-	if !valid {
-		err = fmt.Errorf("cannot read blocks from %s: File permissions should be %o", path, PubKeyFilePerms)
-		return
-	}
-
-	reader, err := os.Open(path)
-	if err != nil {
-		return
-	}
-	defer reader.Close()
-
-	encoded, err := io.ReadAll(reader)
-	if err != nil {
-		return
-	}
-
-	var block *pem.Block
-	for {
-		block, encoded = pem.Decode(encoded)
-		if block == nil {
-			break
-		}
-
-		blocks = append(blocks, block)
-	}
-	return
-}
-
-func writeBlocks(path string, perms, notPerms fs.FileMode, blocks []*pem.Block) error {
-	writer, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer writer.Close()
-
-	valid, err := filePermsValid(path, notPerms)
-	if err != nil {
-		return err
-	}
-	if !valid {
-		err = setFilePerms(path, perms)
-		if err != nil {
-			return err
-		}
-	}
-
-	for _, block := range blocks {
-		err = pem.Encode(writer, block)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
 
 type pemFile struct {
 	File
@@ -153,7 +71,7 @@ func (o *pemFile) UnmarshalText(text []byte) error {
 }
 
 func (o pemFile) FilePermsValid() (bool, error) {
-	return o.File.FilePermsValid(o.notPermsMask)
+	return o.File.FilePermsValid(o.setPerms, o.notPermsMask)
 }
 
 func (o pemFile) SetFilePerms() error {
@@ -231,7 +149,7 @@ type Cert struct {
 }
 
 func SomeCert(path string) (Cert, error) {
-	p, err := somePem(path, PubKeyFilePerms, PubKeyFilePermsMask)
+	p, err := somePem(path, CertFilePerms, CertFilePermsMask)
 	if err != nil {
 		return Cert{}, err
 	}
@@ -239,7 +157,7 @@ func SomeCert(path string) (Cert, error) {
 }
 
 func NoCert() Cert {
-	return Cert{noPem(PubKeyFilePerms, PubKeyFilePermsMask)}
+	return Cert{noPem(CertFilePerms, CertFilePermsMask)}
 }
 
 func (o Cert) Type() string {

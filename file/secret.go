@@ -8,7 +8,8 @@ import (
 )
 
 const (
-	SecretFilePerms fs.FileMode = 0600
+	SecretFilePermsInclude fs.FileMode = 0600
+	SecretFilePermsExclude fs.FileMode = 0177
 )
 
 type SecretFile struct {
@@ -60,18 +61,15 @@ func (o SecretFile) Abs() (opt SecretFile, err error) {
 }
 
 func (o SecretFile) FilePermsValid() (bool, error) {
-	return o.File.FilePermsValid(SecretFilePerms)
+	return o.File.FilePermsValid(SecretFilePermsInclude, SecretFilePermsExclude)
 }
 
 func (o SecretFile) OpenFile(flag int) (*os.File, error) {
-	return o.File.OpenFile(flag, SecretFilePerms)
+	return o.File.OpenFile(flag, SecretFilePermsInclude)
 }
 
-func (o SecretFile) ReadFile() (secret optional.Secret, err error) {
-	data, err := o.File.ReadFile()
-	if err != nil {
-		return optional.NoSecret(), err
-	}
-
-	return optional.SomeSecret(string(data)), nil
+func (o SecretFile) ReadFile() (secret optional.Secret, ok bool) {
+	str, ok := o.File.ReadFile()
+	secret = optional.MakeSecret(&str)
+	return secret, ok
 }
