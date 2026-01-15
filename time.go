@@ -136,3 +136,95 @@ func (o *Time) UnmarshalJSON(data []byte) error {
 
 	return o.UnmarshalText([]byte(s))
 }
+
+// Duration is the optional version of time.Duration. Under the hood, time.Duration is an int64
+// but we still use an underlying Option[time.Duration] type to get access to all the associated methods.
+type Duration struct {
+	Option[time.Duration]
+}
+
+func SomeDuration(value time.Duration) Duration {
+	return Duration{Some(value)}
+}
+
+func NoDuration(formats ...string) Duration {
+	return Duration{None[time.Duration]()}
+}
+
+func (o Duration) Type() string {
+	return "Duration"
+}
+
+func (o *Duration) Set(str string) error {
+	return o.UnmarshalText([]byte(str))
+}
+
+func (o Duration) String() string {
+	if o.IsNone() {
+		return "None[Duration]"
+	} else {
+		tmp, ok := o.Get()
+		if !ok {
+			return "Error[Duration]"
+		}
+		// TODO: make the number of significant figures printed configurable?
+		return tmp.String()
+	}
+}
+
+func (o Duration) MarshalText() (text []byte, err error) {
+	if o.IsNone() {
+		return []byte("None"), nil
+	} else {
+		tmp, ok := o.Get()
+		var err error
+		if !ok {
+			err = optionalError("Attempted to Get Option with None value")
+		}
+		return []byte(tmp.String()), err
+	}
+}
+
+func (o *Duration) UnmarshalText(text []byte) error {
+	tmp := string(text)
+	if tmp == "None" || tmp == "none" || tmp == "null" || tmp == "nil" {
+		o.Clear()
+	} else {
+		d, err := time.ParseDuration(tmp)
+		if err != nil {
+			return err
+		}
+		o.Replace(d)
+	}
+	return nil
+}
+
+// Marshaler interface
+
+func (o Duration) MarshalJSON() ([]byte, error) {
+	if o.IsNone() {
+		return json.Marshal(nil)
+	} else {
+		tmp, err := o.MarshalText()
+		ret := append([]byte(`"`), tmp...)
+		ret = append(ret, '"')
+		return ret, err
+	}
+}
+
+// Unmarshaller interface
+func (o *Duration) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		o.Clear()
+		return nil
+	}
+
+	// TODO: think if a better way to do this.
+	var s string
+	err := json.Unmarshal(data, &s)
+	if err != nil {
+		return err
+	}
+
+	return o.UnmarshalText([]byte(s))
+}
