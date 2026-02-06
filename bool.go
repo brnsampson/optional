@@ -1,6 +1,7 @@
 package optional
 
 import (
+	"fmt"
 	"strconv"
 )
 
@@ -61,6 +62,31 @@ func (o *Bool) UnmarshalText(text []byte) error {
 		o.Replace(i)
 	}
 	return nil
+}
+
+// Implements database/sql.Scanner interface.
+func (o *Bool) Scan(src any) error {
+	if src == nil {
+		// NULL value row
+		o.Clear()
+		return nil
+	}
+	switch src.(type) {
+	case bool:
+		_ = o.Replace(src.(bool))
+	default:
+		return fmt.Errorf("converting driver.Value type %T to %s", src, o.Type())
+	}
+	return nil
+}
+
+// Implements the database/sql/driver.Valuer interface
+func (o Bool) Value() (any, error) {
+	val, ok := o.Get()
+	if ok {
+		return val, nil
+	}
+	return nil, nil
 }
 
 // True returns true iff the value is Some(true). It is a special method exclusive to Bool

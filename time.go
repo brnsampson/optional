@@ -2,10 +2,17 @@ package optional
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 )
 
-const DEFAULT_TIME_FORMAT string = time.RFC3339
+const DEFAULT_TIME_FORMAT string = time.RFC3339Nano
+
+var DefaultExtraTimeFormats []string = []string{time.RFC3339, time.UnixDate, time.RubyDate, time.RFC822, time.RFC822Z}
+
+func SetDefaultExtraTimeFormats(formats []string) {
+	DefaultExtraTimeFormats = formats
+}
 
 type Time struct {
 	Option[time.Time]
@@ -37,6 +44,7 @@ func (o Time) WithFormats(formats ...string) Time {
 func (o *Time) defaultFormatsIfEmpty() {
 	if len(o.formats) == 0 {
 		o.formats = append(o.formats, DEFAULT_TIME_FORMAT)
+		o.formats = append(o.formats, DefaultExtraTimeFormats...)
 	}
 }
 
@@ -73,6 +81,7 @@ func (o Time) MarshalText() (text []byte, err error) {
 		if !ok {
 			err = optionalError("Attempted to Get Option with None value")
 		}
+		o.defaultFormatsIfEmpty()
 		return []byte(tmp.Format(o.formats[0])), err
 	}
 }
@@ -135,6 +144,35 @@ func (o *Time) UnmarshalJSON(data []byte) error {
 	}
 
 	return o.UnmarshalText([]byte(s))
+}
+
+// Implements database/sql.Scanner interface.
+func (o *Time) Scan(src any) error {
+	if src == nil {
+		// NULL value row
+		o.Clear()
+		return nil
+	}
+	switch src.(type) {
+	case time.Time:
+		_ = o.Replace(src.(time.Time))
+	case string:
+		o.UnmarshalText([]byte(src.(string)))
+	case []byte:
+		o.UnmarshalText(src.([]byte))
+	default:
+		return fmt.Errorf("converting driver.Value type %T to %s", src, o.Type())
+	}
+	return nil
+}
+
+// Implements the database/sql/driver.Valuer interface
+func (o Time) Value() (any, error) {
+	val, ok := o.Get()
+	if ok {
+		return val, nil
+	}
+	return nil, nil
 }
 
 // Duration is the optional version of time.Duration. Under the hood, time.Duration is an int64
@@ -227,4 +265,32 @@ func (o *Duration) UnmarshalJSON(data []byte) error {
 	}
 
 	return o.UnmarshalText([]byte(s))
+}
+
+// Implements database/sql.Scanner interface.
+func (o *Duration) Scan(src any) error {
+	if src == nil {
+		// NULL value row
+		o.Clear()
+		return nil
+	}
+	switch src.(type) {
+	case time.Duration:
+		_ = o.Replace(src.(time.Duration))
+	case int64:
+		_ = o.Replace(time.Duration(src.(int64)))
+	default:
+		return fmt.Errorf("converting driver.Value type %T to %s", src, o.Type())
+	}
+	return nil
+}
+
+// Implements the database/sql/driver.Valuer interface
+func (o Duration) Value() (any, error) {
+	val, ok := o.Get()
+	if ok {
+		// The set of types which sql can accept does not include time.Duration. See https://pkg.go.dev/database/sql/driver#Value
+		return int64(val), nil
+	}
+	return nil, nil
 }

@@ -114,7 +114,7 @@ func TestTimeUnmarshalJson(t *testing.T) {
 	// Test invalid data case
 	var p optional.Time
 	err = json.Unmarshal([]byte(nowUnixJson), &p)
-	assert.Assert(t, err != nil)
+	assert.NilError(t, err)
 
 	var q optional.Time
 	err = json.Unmarshal([]byte("this is not a date"), &q)

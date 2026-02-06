@@ -42,11 +42,23 @@ type MutableOptional[T comparable] interface {
 	MutableClone() MutableOptional[T]
 	Clear()
 	Default(T) (replaced bool)
+	// Replace updates the current value in the MutableOptional and returns the previous value
 	Replace(T) Optional[T]
 	// Transform only applies the func to the values of Some valued Optionals. Any mapping of None is None.
 	Transform(f Transformer[T]) error
 	// Satisfies encoding.json.UnMarshaler
 	UnmarshalJSON([]byte) error
+}
+
+// StorableOptional is an extension of the MutableOptional interface that allows golang's
+// database/sql package to correctly store and retrieve values.
+type StorableOptional[T comparable] interface {
+	MutableOptional[T]
+
+	// Implements database/sql.Scanner interface
+	Scan(src any) error
+	// Implements the database/sqlc.Valuer interface
+	Value() (any, error)
 }
 
 // LoadableOptional is an extension of the Optional interface meant to make it more useful for
@@ -57,8 +69,9 @@ type LoadableOptional[T primatives] interface {
 	// Satisfies fmt.Stringer interface
 	String() string
 	// Along with String(), implements flag.Value and pflag.Value
-	Type() string
 	Set(string) error
+	// Along with String() and Set(), implements pflag.Value
+	Type() string
 	// Satisfies the encoding.TextMarshaler
 	MarshalText() (text []byte, err error)
 	// Satisfies encoding.TextUnmarshaler

@@ -1,6 +1,7 @@
 package optional
 
 import (
+	"fmt"
 	"strconv"
 )
 
@@ -64,6 +65,31 @@ func (o *Uint) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// Implements database/sql.Scanner interface.
+func (o *Uint) Scan(src any) error {
+	if src == nil {
+		// NULL value row
+		o.Clear()
+		return nil
+	}
+	switch src.(type) {
+	case uint:
+		_ = o.Replace(src.(uint))
+	default:
+		return fmt.Errorf("converting driver.Value type %T to %s", src, o.Type())
+	}
+	return nil
+}
+
+// Implements the database/sql/driver.Valuer interface
+func (o Uint) Value() (any, error) {
+	val, ok := o.Get()
+	if ok {
+		return val, nil
+	}
+	return nil, nil
+}
+
 // 8bit sized uint
 type Uint8 struct {
 	Option[uint8]
@@ -122,6 +148,31 @@ func (o *Uint8) UnmarshalText(text []byte) error {
 		o.Replace(uint8(i))
 	}
 	return nil
+}
+
+// Implements database/sql.Scanner interface.
+func (o *Uint8) Scan(src any) error {
+	if src == nil {
+		// NULL value row
+		o.Clear()
+		return nil
+	}
+	switch src.(type) {
+	case uint8:
+		_ = o.Replace(src.(uint8))
+	default:
+		return fmt.Errorf("converting driver.Value type %T to %s", src, o.Type())
+	}
+	return nil
+}
+
+// Implements the database/sql/driver.Valuer interface
+func (o Uint8) Value() (any, error) {
+	val, ok := o.Get()
+	if ok {
+		return val, nil
+	}
+	return nil, nil
 }
 
 // 16bit sized uint
@@ -184,6 +235,31 @@ func (o *Uint16) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// Implements database/sql.Scanner interface.
+func (o *Uint16) Scan(src any) error {
+	if src == nil {
+		// NULL value row
+		o.Clear()
+		return nil
+	}
+	switch src.(type) {
+	case uint16:
+		_ = o.Replace(src.(uint16))
+	default:
+		return fmt.Errorf("converting driver.Value type %T to %s", src, o.Type())
+	}
+	return nil
+}
+
+// Implements the database/sql/driver.Valuer interface
+func (o Uint16) Value() (any, error) {
+	val, ok := o.Get()
+	if ok {
+		return val, nil
+	}
+	return nil, nil
+}
+
 // 32bit sized uint
 type Uint32 struct {
 	Option[uint32]
@@ -244,6 +320,31 @@ func (o *Uint32) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// Implements database/sql.Scanner interface.
+func (o *Uint32) Scan(src any) error {
+	if src == nil {
+		// NULL value row
+		o.Clear()
+		return nil
+	}
+	switch src.(type) {
+	case uint32:
+		_ = o.Replace(src.(uint32))
+	default:
+		return fmt.Errorf("converting driver.Value type %T to %s", src, o.Type())
+	}
+	return nil
+}
+
+// Implements the database/sql/driver.Valuer interface
+func (o Uint32) Value() (any, error) {
+	val, ok := o.Get()
+	if ok {
+		return val, nil
+	}
+	return nil, nil
+}
+
 // 64bit sized uint
 type Uint64 struct {
 	Option[uint64]
@@ -302,4 +403,29 @@ func (o *Uint64) UnmarshalText(text []byte) error {
 		o.Replace(i)
 	}
 	return nil
+}
+
+// Implements database/sql.Scanner interface.
+func (o *Uint64) Scan(src any) error {
+	if src == nil {
+		// NULL value row
+		o.Clear()
+		return nil
+	}
+	switch src.(type) {
+	case uint64:
+		_ = o.Replace(src.(uint64))
+	default:
+		return fmt.Errorf("converting driver.Value type %T to %s", src, o.Type())
+	}
+	return nil
+}
+
+// Implements the database/sql/driver.Valuer interface
+func (o Uint64) Value() (any, error) {
+	val, ok := o.Get()
+	if ok {
+		return val, nil
+	}
+	return nil, nil
 }

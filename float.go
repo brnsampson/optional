@@ -1,6 +1,7 @@
 package optional
 
 import (
+	"fmt"
 	"strconv"
 )
 
@@ -64,6 +65,31 @@ func (o *Float32) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// Implements database/sql.Scanner interface.
+func (o *Float32) Scan(src any) error {
+	if src == nil {
+		// NULL value row
+		o.Clear()
+		return nil
+	}
+	switch src.(type) {
+	case float32:
+		_ = o.Replace(src.(float32))
+	default:
+		return fmt.Errorf("converting driver.Value type %T to %s", src, o.Type())
+	}
+	return nil
+}
+
+// Implements the database/sql/driver.Valuer interface
+func (o Float32) Value() (any, error) {
+	val, ok := o.Get()
+	if ok {
+		return val, nil
+	}
+	return nil, nil
+}
+
 // 64bit sized floats
 type Float64 struct {
 	Option[float64]
@@ -122,4 +148,29 @@ func (o *Float64) UnmarshalText(text []byte) error {
 		o.Replace(i)
 	}
 	return nil
+}
+
+// Implements database/sql.Scanner interface.
+func (o *Float64) Scan(src any) error {
+	if src == nil {
+		// NULL value row
+		o.Clear()
+		return nil
+	}
+	switch src.(type) {
+	case float64:
+		_ = o.Replace(src.(float64))
+	default:
+		return fmt.Errorf("converting driver.Value type %T to %s", src, o.Type())
+	}
+	return nil
+}
+
+// Implements the database/sql/driver.Valuer interface
+func (o Float64) Value() (any, error) {
+	val, ok := o.Get()
+	if ok {
+		return val, nil
+	}
+	return nil, nil
 }

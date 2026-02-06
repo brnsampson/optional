@@ -53,3 +53,30 @@ func (s Secret) Format(f fmt.State, verb rune) {
 func (s Secret) LogValue() slog.Value {
 	return slog.StringValue(s.String())
 }
+
+// Implements database/sql.Scanner interface.
+func (o *Secret) Scan(src any) error {
+	if src == nil {
+		// NULL value row
+		o.Clear()
+		return nil
+	}
+	switch src.(type) {
+	case string:
+		_ = o.Replace(src.(string))
+	case []byte:
+		_ = o.Replace(string(src.([]byte)))
+	default:
+		return fmt.Errorf("converting driver.Value type %T to %s", src, o.Type())
+	}
+	return nil
+}
+
+// Implements the database/sql/driver.Valuer interface
+func (o Secret) Value() (any, error) {
+	val, ok := o.Get()
+	if ok {
+		return val, nil
+	}
+	return nil, nil
+}
