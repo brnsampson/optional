@@ -1,8 +1,10 @@
 package optional
 
-import "fmt"
+import (
+	"database/sql/driver"
+	"fmt"
+)
 
-// Str implements Configand for the string type.
 type Str struct {
 	Option[string]
 }
@@ -58,26 +60,26 @@ func (o *Str) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// Implements database/sql.Scanner interface.
+// Scan implements database/sql.Scanner interface.
 func (o *Str) Scan(src any) error {
 	if src == nil {
 		// NULL value row
 		o.Clear()
 		return nil
 	}
-	switch src.(type) {
+	switch t := src.(type) {
 	case string:
-		_ = o.Replace(src.(string))
+		_ = o.Replace(t)
 	case []byte:
-		_ = o.Replace(string(src.([]byte)))
+		_ = o.Replace(string(t))
 	default:
 		return fmt.Errorf("converting driver.Value type %T to %s", src, o.Type())
 	}
 	return nil
 }
 
-// Implements the database/sql/driver.Valuer interface
-func (o Str) Value() (any, error) {
+// Value implements the database/sql/driver.Valuer interface
+func (o Str) Value() (driver.Value, error) {
 	val, ok := o.Get()
 	if ok {
 		return val, nil

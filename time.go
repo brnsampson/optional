@@ -1,6 +1,7 @@
 package optional
 
 import (
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -128,7 +129,7 @@ func (o Time) MarshalJSON() ([]byte, error) {
 	}
 }
 
-// Unmarshaller interface
+// UnmarshalJSON implements encoding/json.Unmarshaller interface
 func (o *Time) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
 		o.Clear()
@@ -146,7 +147,7 @@ func (o *Time) UnmarshalJSON(data []byte) error {
 	return o.UnmarshalText([]byte(s))
 }
 
-// Implements database/sql.Scanner interface.
+// Scan implements database/sql.Scanner interface.
 func (o *Time) Scan(src any) error {
 	if src == nil {
 		// NULL value row
@@ -157,17 +158,23 @@ func (o *Time) Scan(src any) error {
 	case time.Time:
 		_ = o.Replace(src.(time.Time))
 	case string:
-		o.UnmarshalText([]byte(src.(string)))
+		err := o.UnmarshalText([]byte(src.(string)))
+		if err != nil {
+			return err
+		}
 	case []byte:
-		o.UnmarshalText(src.([]byte))
+		err := o.UnmarshalText(src.([]byte))
+		if err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("converting driver.Value type %T to %s", src, o.Type())
 	}
 	return nil
 }
 
-// Implements the database/sql/driver.Valuer interface
-func (o Time) Value() (any, error) {
+// Value implements the database/sql/driver.Valuer interface
+func (o Time) Value() (driver.Value, error) {
 	val, ok := o.Get()
 	if ok {
 		return val, nil
@@ -250,7 +257,7 @@ func (o Duration) MarshalJSON() ([]byte, error) {
 	}
 }
 
-// Unmarshaller interface
+// UnmarshalJSON implements encoding/json.Unmarshaller interface
 func (o *Duration) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
 		o.Clear()
@@ -267,7 +274,7 @@ func (o *Duration) UnmarshalJSON(data []byte) error {
 	return o.UnmarshalText([]byte(s))
 }
 
-// Implements database/sql.Scanner interface.
+// Scan implements database/sql.Scanner interface.
 func (o *Duration) Scan(src any) error {
 	if src == nil {
 		// NULL value row
@@ -285,8 +292,8 @@ func (o *Duration) Scan(src any) error {
 	return nil
 }
 
-// Implements the database/sql/driver.Valuer interface
-func (o Duration) Value() (any, error) {
+// Value implements the database/sql/driver.Valuer interface
+func (o Duration) Value() (driver.Value, error) {
 	val, ok := o.Get()
 	if ok {
 		// The set of types which sql can accept does not include time.Duration. See https://pkg.go.dev/database/sql/driver#Value

@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/brnsampson/optional"
 	"gotest.tools/v3/assert"
 )
@@ -121,6 +122,62 @@ func TestTimeUnmarshalJson(t *testing.T) {
 	assert.Assert(t, err != nil)
 }
 
+func TestTimeSql(t *testing.T) {
+	ins := "INSERT INTO optionTest (val) VALUES (?)"
+	q := `SELECT * FROM optionTest WHERE val = ?`
+	test1Val := time.Now()
+	test1 := optional.SomeTime(test1Val)
+	test2 := optional.NoTime()
+	out1 := optional.NoTime()
+	out2 := optional.SomeTime(time.Now())
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	assert.NilError(t, err, "failed to open mock database connection")
+	defer db.Close()
+
+	// mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO optionTest").WithArgs(test1).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("INSERT INTO optionTest").WithArgs(test2).WillReturnResult(sqlmock.NewResult(2, 1))
+	r1 := sqlmock.NewRows([]string{"val"})
+	r1.AddRow(test1Val)
+	select1 := mock.ExpectQuery(`SELECT (.+) FROM optionTest`)
+	select1.WithArgs(test1).WillReturnRows(r1)
+	r2 := sqlmock.NewRows([]string{"val"})
+	r2.AddRow(nil)
+	select2 := mock.ExpectQuery(`SELECT (.+) FROM optionTest`)
+	select2.WithArgs(test2).WillReturnRows(r2)
+
+	_, err = db.Exec(ins, test1)
+	assert.NilError(t, err, "error using mock to insert optional Some type")
+	_, err = db.Exec(ins, test2)
+	assert.NilError(t, err, "error using mock to insert optional None type")
+
+	rows1, err := db.Query(q, test1)
+	assert.NilError(t, err, "error using mock to query with optional Some type")
+	defer rows1.Close()
+
+	for rows1.Next() {
+		err = rows1.Scan(&out1)
+		assert.NilError(t, err, "error using Scan to convert sql row to optional type")
+		o1, ok := out1.Get()
+		assert.Assert(t, ok, "Some value was None after being retrieved from DB")
+		assert.Assert(t, test1Val.Equal(o1))
+	}
+
+	rows2, err := db.Query(q, test2)
+	assert.NilError(t, err, "error using mock to query with optional None type")
+	defer rows2.Close()
+
+	for rows2.Next() {
+		err = rows2.Scan(&out2)
+		assert.NilError(t, err, "error using Scan to convert sql row to optional None type")
+		assert.Assert(t, out2.IsNone(), "None case failed")
+	}
+}
+
 func TestDurationType(t *testing.T) {
 	d, err := time.ParseDuration("300ms")
 	assert.NilError(t, err)
@@ -220,4 +277,58 @@ func TestDurationUnmarshalJson(t *testing.T) {
 	var q optional.Duration
 	err = json.Unmarshal([]byte("this is not a duration"), &q)
 	assert.Assert(t, err != nil)
+}
+
+func TestDurationSql(t *testing.T) {
+	ins := "INSERT INTO optionTest (val) VALUES (?)"
+	q := `SELECT * FROM optionTest WHERE val = ?`
+	test1Val := 1 * time.Minute
+	test1 := optional.SomeDuration(test1Val)
+	test2 := optional.NoDuration()
+	out1 := optional.NoDuration()
+	out2 := optional.SomeDuration(1 * time.Minute)
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	assert.NilError(t, err, "failed to open mock database connection")
+	defer db.Close()
+
+	// mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO optionTest").WithArgs(test1).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("INSERT INTO optionTest").WithArgs(test2).WillReturnResult(sqlmock.NewResult(2, 1))
+	r1 := sqlmock.NewRows([]string{"val"})
+	r1.AddRow(test1Val)
+	select1 := mock.ExpectQuery(`SELECT (.+) FROM optionTest`)
+	select1.WithArgs(test1).WillReturnRows(r1)
+	r2 := sqlmock.NewRows([]string{"val"})
+	r2.AddRow(nil)
+	select2 := mock.ExpectQuery(`SELECT (.+) FROM optionTest`)
+	select2.WithArgs(test2).WillReturnRows(r2)
+
+	_, err = db.Exec(ins, test1)
+	assert.NilError(t, err, "error using mock to insert optional Some type")
+	_, err = db.Exec(ins, test2)
+	assert.NilError(t, err, "error using mock to insert optional None type")
+
+	rows1, err := db.Query(q, test1)
+	assert.NilError(t, err, "error using mock to query with optional Some type")
+	defer rows1.Close()
+
+	for rows1.Next() {
+		err = rows1.Scan(&out1)
+		assert.NilError(t, err, "error using Scan to convert sql row to optional type")
+		assert.Equal(t, test1, out1, "Some Scan case failed")
+	}
+
+	rows2, err := db.Query(q, test2)
+	assert.NilError(t, err, "error using mock to query with optional None type")
+	defer rows2.Close()
+
+	for rows2.Next() {
+		err = rows2.Scan(&out2)
+		assert.NilError(t, err, "error using Scan to convert sql row to optional None type")
+		assert.Assert(t, out2.IsNone(), "None case failed")
+	}
 }

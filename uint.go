@@ -1,11 +1,14 @@
 package optional
 
 import (
+	"database/sql/driver"
 	"fmt"
+	"math"
 	"strconv"
 )
 
 // default sized uint
+
 type Uint struct {
 	Option[uint]
 }
@@ -65,32 +68,8 @@ func (o *Uint) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// Implements database/sql.Scanner interface.
-func (o *Uint) Scan(src any) error {
-	if src == nil {
-		// NULL value row
-		o.Clear()
-		return nil
-	}
-	switch src.(type) {
-	case uint:
-		_ = o.Replace(src.(uint))
-	default:
-		return fmt.Errorf("converting driver.Value type %T to %s", src, o.Type())
-	}
-	return nil
-}
-
-// Implements the database/sql/driver.Valuer interface
-func (o Uint) Value() (any, error) {
-	val, ok := o.Get()
-	if ok {
-		return val, nil
-	}
-	return nil, nil
-}
-
 // 8bit sized uint
+
 type Uint8 struct {
 	Option[uint8]
 }
@@ -150,32 +129,39 @@ func (o *Uint8) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// Implements database/sql.Scanner interface.
+// Scan implements database/sql.Scanner interface.
 func (o *Uint8) Scan(src any) error {
 	if src == nil {
 		// NULL value row
 		o.Clear()
 		return nil
 	}
-	switch src.(type) {
+	switch t := src.(type) {
+	case int64:
+		if t > math.MaxUint8 || t < 0 {
+			return fmt.Errorf("int64 of value %d cannot fit in uint8", t)
+		}
+		_ = o.Replace(uint8(t))
 	case uint8:
-		_ = o.Replace(src.(uint8))
+		// This shouldn't ever actually happen
+		_ = o.Replace(t)
 	default:
 		return fmt.Errorf("converting driver.Value type %T to %s", src, o.Type())
 	}
 	return nil
 }
 
-// Implements the database/sql/driver.Valuer interface
-func (o Uint8) Value() (any, error) {
+// Value implements the database/sql/driver.Valuer interface
+func (o Uint8) Value() (driver.Value, error) {
 	val, ok := o.Get()
 	if ok {
-		return val, nil
+		return int64(val), nil
 	}
 	return nil, nil
 }
 
 // 16bit sized uint
+
 type Uint16 struct {
 	Option[uint16]
 }
@@ -235,32 +221,38 @@ func (o *Uint16) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// Implements database/sql.Scanner interface.
+// Scan implements database/sql.Scanner interface.
 func (o *Uint16) Scan(src any) error {
 	if src == nil {
 		// NULL value row
 		o.Clear()
 		return nil
 	}
-	switch src.(type) {
+	switch t := src.(type) {
+	case int64:
+		if t > math.MaxUint16 || t < 0 {
+			return fmt.Errorf("int64 of value %d cannot fit in uint16", t)
+		}
+		_ = o.Replace(uint16(t))
 	case uint16:
-		_ = o.Replace(src.(uint16))
+		_ = o.Replace(t)
 	default:
 		return fmt.Errorf("converting driver.Value type %T to %s", src, o.Type())
 	}
 	return nil
 }
 
-// Implements the database/sql/driver.Valuer interface
-func (o Uint16) Value() (any, error) {
+// Value implements the database/sql/driver.Valuer interface
+func (o Uint16) Value() (driver.Value, error) {
 	val, ok := o.Get()
 	if ok {
-		return val, nil
+		return int64(val), nil
 	}
 	return nil, nil
 }
 
 // 32bit sized uint
+
 type Uint32 struct {
 	Option[uint32]
 }
@@ -320,32 +312,38 @@ func (o *Uint32) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// Implements database/sql.Scanner interface.
+// Scan implements database/sql.Scanner interface.
 func (o *Uint32) Scan(src any) error {
 	if src == nil {
 		// NULL value row
 		o.Clear()
 		return nil
 	}
-	switch src.(type) {
+	switch t := src.(type) {
+	case int64:
+		if t > math.MaxUint32 || t < 0 {
+			return fmt.Errorf("int64 of value %d cannot fit in uint32", t)
+		}
+		_ = o.Replace(uint32(t))
 	case uint32:
-		_ = o.Replace(src.(uint32))
+		_ = o.Replace(t)
 	default:
 		return fmt.Errorf("converting driver.Value type %T to %s", src, o.Type())
 	}
 	return nil
 }
 
-// Implements the database/sql/driver.Valuer interface
-func (o Uint32) Value() (any, error) {
+// Value implements the database/sql/driver.Valuer interface
+func (o Uint32) Value() (driver.Value, error) {
 	val, ok := o.Get()
 	if ok {
-		return val, nil
+		return int64(val), nil
 	}
 	return nil, nil
 }
 
 // 64bit sized uint
+
 type Uint64 struct {
 	Option[uint64]
 }
@@ -405,27 +403,39 @@ func (o *Uint64) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// Implements database/sql.Scanner interface.
+// Scan implements database/sql.Scanner interface.
 func (o *Uint64) Scan(src any) error {
 	if src == nil {
 		// NULL value row
 		o.Clear()
 		return nil
 	}
-	switch src.(type) {
+	switch t := src.(type) {
+	case int64:
+		if t < 0 {
+			// max(uint64) >> max(int64)
+			return fmt.Errorf("negative value %d cannot convert to uint64", t)
+		}
+		_ = o.Replace(uint64(t))
+	case string:
+		tmp, err := strconv.ParseUint(t, 10, 64)
+		if err != nil {
+			return err
+		}
+		_ = o.Replace(tmp)
 	case uint64:
-		_ = o.Replace(src.(uint64))
+		_ = o.Replace(t)
 	default:
 		return fmt.Errorf("converting driver.Value type %T to %s", src, o.Type())
 	}
 	return nil
 }
 
-// Implements the database/sql/driver.Valuer interface
-func (o Uint64) Value() (any, error) {
+// Value implements the database/sql/driver.Valuer interface
+func (o Uint64) Value() (driver.Value, error) {
 	val, ok := o.Get()
 	if ok {
-		return val, nil
+		return strconv.FormatUint(val, 10), nil
 	}
 	return nil, nil
 }

@@ -1,8 +1,10 @@
 package optional
 
 import (
+	"database/sql/driver"
 	"encoding/hex"
 	"fmt"
+	"math"
 )
 
 // Byte implements LoadableOptional for the byte type.
@@ -86,11 +88,22 @@ func (o *Byte) Scan(src any) error {
 		o.Clear()
 		return nil
 	}
-	switch src.(type) {
+	switch t := src.(type) {
 	case string:
-		o.UnmarshalText([]byte(src.(string)))
+		if err := o.UnmarshalText([]byte(t)); err != nil {
+			return err
+		}
 	case []byte:
-		o.UnmarshalText(src.([]byte))
+		if err := o.UnmarshalText(t); err != nil {
+			return err
+		}
+	case int64:
+		if t > math.MaxUint8 || t < 0 {
+			return fmt.Errorf("%d outside of range of a byte", t)
+		}
+		_ = o.Replace(byte(t))
+	case uint8:
+		_ = o.Replace(byte(t))
 	default:
 		return fmt.Errorf("converting driver.Value type %T to %s", src, o.Type())
 	}
@@ -98,10 +111,10 @@ func (o *Byte) Scan(src any) error {
 }
 
 // Value implements the database/sql/driver.Valuer interface
-func (o Byte) Value() (any, error) {
+func (o Byte) Value() (driver.Value, error) {
 	val, ok := o.Get()
 	if ok {
-		return val, nil
+		return []byte{val}, nil
 	}
 	return nil, nil
 }

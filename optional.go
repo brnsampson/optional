@@ -1,3 +1,5 @@
+// Package optional provides a convenient and safe way to deal with options which may or may
+// not have a designated value without using pointers and risking nil pointer dereferencing panics.
 package optional
 
 import "time"
