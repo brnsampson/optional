@@ -19,7 +19,7 @@ func TestTimeType(t *testing.T) {
 
 func TestTimeString(t *testing.T) {
 	now := time.Now().Truncate(0)
-	nowString := now.Format(time.RFC3339Nano)
+	nowString := now.Format(time.RFC3339)
 
 	o := optional.NoTime()
 	err := o.UnmarshalText([]byte(nowString))

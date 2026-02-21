@@ -7,9 +7,12 @@ import (
 	"time"
 )
 
-const DEFAULT_TIME_FORMAT string = time.RFC3339Nano
+const (
+	DEFAULT_TIME_FORMAT        string = time.RFC3339Nano
+	DEFAULT_TIME_STRING_FORMAT string = time.RFC3339
+)
 
-var DefaultExtraTimeFormats []string = []string{time.RFC3339, time.UnixDate, time.RubyDate, time.RFC822, time.RFC822Z}
+var DefaultExtraTimeFormats []string = []string{time.RFC3339Nano, time.RFC3339, time.UnixDate, time.RubyDate, time.RFC822, time.RFC822Z}
 
 func SetDefaultExtraTimeFormats(formats []string) {
 	DefaultExtraTimeFormats = formats
@@ -17,15 +20,17 @@ func SetDefaultExtraTimeFormats(formats []string) {
 
 type Time struct {
 	Option[time.Time]
-	formats []string
+	StringFormat string
+	DataFormat   string
+	formats      []string
 }
 
 func SomeTime(value time.Time, formats ...string) Time {
-	return Time{Some(value), formats}
+	return Time{Some(value), DEFAULT_TIME_STRING_FORMAT, DEFAULT_TIME_FORMAT, formats}
 }
 
 func NoTime(formats ...string) Time {
-	return Time{None[time.Time](), formats}
+	return Time{None[time.Time](), DEFAULT_TIME_STRING_FORMAT, DEFAULT_TIME_FORMAT, formats}
 }
 
 func (o Time) WithFormats(formats ...string) Time {
@@ -37,8 +42,13 @@ func (o Time) WithFormats(formats ...string) Time {
 }
 
 func (o *Time) defaultFormatsIfEmpty() {
+	if o.StringFormat == "" {
+		o.StringFormat = DEFAULT_TIME_STRING_FORMAT
+	}
+	if o.DataFormat == "" {
+		o.DataFormat = DEFAULT_TIME_FORMAT
+	}
 	if len(o.formats) == 0 {
-		o.formats = append(o.formats, DEFAULT_TIME_FORMAT)
 		o.formats = append(o.formats, DefaultExtraTimeFormats...)
 	}
 }
@@ -64,7 +74,7 @@ func (o Time) String() string {
 			return "Error[Time]"
 		}
 		o.defaultFormatsIfEmpty()
-		return tmp.Format(o.formats[0])
+		return tmp.Format(o.StringFormat)
 	}
 }
 
@@ -78,7 +88,7 @@ func (o Time) MarshalText() (text []byte, err error) {
 			err = optionalError("Attempted to Get Option with None value")
 		}
 		o.defaultFormatsIfEmpty()
-		return []byte(tmp.Format(o.formats[0])), err
+		return []byte(tmp.Format(o.DataFormat)), err
 	}
 }
 
