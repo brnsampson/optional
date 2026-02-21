@@ -20,7 +20,10 @@ func TestTimeType(t *testing.T) {
 func TestTimeString(t *testing.T) {
 	now := time.Now().Truncate(0)
 	nowString := now.Format(time.RFC3339Nano)
-	o := optional.SomeTime(now).WithFormats(time.RFC3339Nano)
+
+	o := optional.NoTime()
+	err := o.UnmarshalText([]byte(nowString))
+	assert.NilError(t, err, "error unmarshaling text")
 	assert.Equal(t, nowString, o.String())
 }
 

@@ -21,16 +21,10 @@ type Time struct {
 }
 
 func SomeTime(value time.Time, formats ...string) Time {
-	if len(formats) == 0 {
-		formats = append(formats, DEFAULT_TIME_FORMAT)
-	}
 	return Time{Some(value), formats}
 }
 
 func NoTime(formats ...string) Time {
-	if len(formats) == 0 {
-		formats = append(formats, DEFAULT_TIME_FORMAT)
-	}
 	return Time{None[time.Time](), formats}
 }
 
@@ -69,6 +63,7 @@ func (o Time) String() string {
 		if !ok {
 			return "Error[Time]"
 		}
+		o.defaultFormatsIfEmpty()
 		return tmp.Format(o.formats[0])
 	}
 }
@@ -90,7 +85,6 @@ func (o Time) MarshalText() (text []byte, err error) {
 func (o *Time) UnmarshalText(text []byte) error {
 	tmp := string(text)
 	if tmp == "None" || tmp == "none" || tmp == "null" || tmp == "nil" {
-		o.defaultFormatsIfEmpty()
 		o.Clear()
 	} else {
 		l := len(o.formats)
@@ -133,7 +127,6 @@ func (o Time) MarshalJSON() ([]byte, error) {
 func (o *Time) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
 		o.Clear()
-		o.defaultFormatsIfEmpty()
 		return nil
 	}
 
@@ -154,16 +147,17 @@ func (o *Time) Scan(src any) error {
 		o.Clear()
 		return nil
 	}
-	switch src.(type) {
+	// TODO: support an int64 as a unix timestamp?
+	switch t := src.(type) {
 	case time.Time:
-		_ = o.Replace(src.(time.Time))
+		_ = o.Replace(t)
 	case string:
-		err := o.UnmarshalText([]byte(src.(string)))
+		err := o.UnmarshalText([]byte(t))
 		if err != nil {
 			return err
 		}
 	case []byte:
-		err := o.UnmarshalText(src.([]byte))
+		err := o.UnmarshalText(t)
 		if err != nil {
 			return err
 		}
