@@ -9,7 +9,7 @@ import (
 
 const (
 	DEFAULT_TIME_FORMAT        string = time.RFC3339Nano
-	DEFAULT_TIME_STRING_FORMAT string = time.RFC3339
+	DEFAULT_TIME_STRING_FORMAT string = time.DateTime
 )
 
 var DefaultExtraTimeFormats []string = []string{time.RFC3339Nano, time.RFC3339, time.UnixDate, time.RubyDate, time.RFC822, time.RFC822Z}
