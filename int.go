@@ -68,6 +68,19 @@ func (o *Int) UnmarshalText(text []byte) error {
 	return nil
 }
 
+func (o Int) Add(i Int) Int {
+	a, ok := o.Get()
+	if !ok {
+		return i
+	}
+
+	b, ok := i.Get()
+	if !ok {
+		return o
+	}
+	return SomeInt(a + b)
+}
+
 // 8bit sized int
 
 type Int8 struct {
@@ -157,6 +170,19 @@ func (o Int8) Value() (driver.Value, error) {
 		return int64(val), nil
 	}
 	return nil, nil
+}
+
+func (o Int8) Add(i Int8) Int8 {
+	a, ok := o.Get()
+	if !ok {
+		return i
+	}
+
+	b, ok := i.Get()
+	if !ok {
+		return o
+	}
+	return SomeInt8(a + b)
 }
 
 // 16bit sized int
@@ -250,6 +276,19 @@ func (o Int16) Value() (driver.Value, error) {
 	return nil, nil
 }
 
+func (o Int16) Add(i Int16) Int16 {
+	a, ok := o.Get()
+	if !ok {
+		return i
+	}
+
+	b, ok := i.Get()
+	if !ok {
+		return o
+	}
+	return SomeInt16(a + b)
+}
+
 // 32bit sized int
 
 type Int32 struct {
@@ -341,6 +380,19 @@ func (o Int32) Value() (driver.Value, error) {
 	return nil, nil
 }
 
+func (o Int32) Add(i Int32) Int32 {
+	a, ok := o.Get()
+	if !ok {
+		return i
+	}
+
+	b, ok := i.Get()
+	if !ok {
+		return o
+	}
+	return SomeInt32(a + b)
+}
+
 // 64bit sized int
 
 type Int64 struct {
@@ -425,4 +477,17 @@ func (o Int64) Value() (driver.Value, error) {
 		return val, nil
 	}
 	return nil, nil
+}
+
+func (o Int64) Add(i Int64) Int64 {
+	a, ok := o.Get()
+	if !ok {
+		return i
+	}
+
+	b, ok := i.Get()
+	if !ok {
+		return o
+	}
+	return SomeInt64(a + b)
 }

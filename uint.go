@@ -68,6 +68,19 @@ func (o *Uint) UnmarshalText(text []byte) error {
 	return nil
 }
 
+func (o Uint) Add(i Uint) Uint {
+	a, ok := o.Get()
+	if !ok {
+		return i
+	}
+
+	b, ok := i.Get()
+	if !ok {
+		return o
+	}
+	return SomeUint(a + b)
+}
+
 // 8bit sized uint
 
 type Uint8 struct {
@@ -158,6 +171,19 @@ func (o Uint8) Value() (driver.Value, error) {
 		return int64(val), nil
 	}
 	return nil, nil
+}
+
+func (o Uint8) Add(i Uint8) Uint8 {
+	a, ok := o.Get()
+	if !ok {
+		return i
+	}
+
+	b, ok := i.Get()
+	if !ok {
+		return o
+	}
+	return SomeUint8(a + b)
 }
 
 // 16bit sized uint
@@ -251,6 +277,19 @@ func (o Uint16) Value() (driver.Value, error) {
 	return nil, nil
 }
 
+func (o Uint16) Add(i Uint16) Uint16 {
+	a, ok := o.Get()
+	if !ok {
+		return i
+	}
+
+	b, ok := i.Get()
+	if !ok {
+		return o
+	}
+	return SomeUint16(a + b)
+}
+
 // 32bit sized uint
 
 type Uint32 struct {
@@ -340,6 +379,19 @@ func (o Uint32) Value() (driver.Value, error) {
 		return int64(val), nil
 	}
 	return nil, nil
+}
+
+func (o Uint32) Add(i Uint32) Uint32 {
+	a, ok := o.Get()
+	if !ok {
+		return i
+	}
+
+	b, ok := i.Get()
+	if !ok {
+		return o
+	}
+	return SomeUint32(a + b)
 }
 
 // 64bit sized uint
@@ -438,4 +490,17 @@ func (o Uint64) Value() (driver.Value, error) {
 		return strconv.FormatUint(val, 10), nil
 	}
 	return nil, nil
+}
+
+func (o Uint64) Add(i Uint64) Uint64 {
+	a, ok := o.Get()
+	if !ok {
+		return i
+	}
+
+	b, ok := i.Get()
+	if !ok {
+		return o
+	}
+	return SomeUint64(a + b)
 }

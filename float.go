@@ -67,6 +67,19 @@ func (o *Float32) UnmarshalText(text []byte) error {
 	return nil
 }
 
+func (o Float32) Add(i Float32) Float32 {
+	a, ok := o.Get()
+	if !ok {
+		return i
+	}
+
+	b, ok := i.Get()
+	if !ok {
+		return o
+	}
+	return SomeFloat32(a + b)
+}
+
 // 64bit sized floats
 
 type Float64 struct {
@@ -155,4 +168,17 @@ func (o Float64) Value() (driver.Value, error) {
 		return val, nil
 	}
 	return nil, nil
+}
+
+func (o Float64) Add(i Float64) Float64 {
+	a, ok := o.Get()
+	if !ok {
+		return i
+	}
+
+	b, ok := i.Get()
+	if !ok {
+		return o
+	}
+	return SomeFloat64(a + b)
 }

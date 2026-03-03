@@ -15,6 +15,22 @@ func TestFloat32Type(t *testing.T) {
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
 
+func TestFloat32Add(t *testing.T) {
+	var a float32 = 42
+	var b float32 = 12
+	A := optional.SomeFloat32(a)
+	B := optional.SomeFloat32(b)
+	none := optional.NoFloat32()
+
+	C := A.Add(B)
+	c, ok := C.Get()
+	assert.Assert(t, ok, "value of adding non-none values was None")
+	assert.Equal(t, c, a+b, "add did not add correctly")
+
+	no := none.Add(none)
+	assert.Assert(t, no.IsNone(), "calling Add on two None types was not None")
+}
+
 func TestFloat32String(t *testing.T) {
 	var f float32 = 42.1
 	fStr := strconv.FormatFloat(float64(f), 'g', 3, 32)
@@ -61,6 +77,22 @@ func TestFloat32UnmarshalText(t *testing.T) {
 func TestFloat64Type(t *testing.T) {
 	o := optional.SomeFloat64(42.0)
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
+}
+
+func TestFloat64Add(t *testing.T) {
+	var a float64 = 42
+	var b float64 = 12
+	A := optional.SomeFloat64(a)
+	B := optional.SomeFloat64(b)
+	none := optional.NoFloat64()
+
+	C := A.Add(B)
+	c, ok := C.Get()
+	assert.Assert(t, ok, "value of adding non-none values was None")
+	assert.Equal(t, c, a+b, "add did not add correctly")
+
+	no := none.Add(none)
+	assert.Assert(t, no.IsNone(), "calling Add on two None types was not None")
 }
 
 func TestFloat64String(t *testing.T) {

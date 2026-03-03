@@ -15,6 +15,22 @@ func TestIntType(t *testing.T) {
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
 
+func TestIntAdd(t *testing.T) {
+	var a int = 42
+	var b int = 12
+	A := optional.SomeInt(a)
+	B := optional.SomeInt(b)
+	none := optional.NoInt()
+
+	C := A.Add(B)
+	c, ok := C.Get()
+	assert.Assert(t, ok, "value of adding non-none values was None")
+	assert.Equal(t, c, a+b, "add did not add correctly")
+
+	no := none.Add(none)
+	assert.Assert(t, no.IsNone(), "calling Add on two None types was not None")
+}
+
 func TestIntString(t *testing.T) {
 	var i int = 42
 	iStr := strconv.Itoa(i)
@@ -61,6 +77,22 @@ func TestIntUnmarshalText(t *testing.T) {
 func TestInt8Type(t *testing.T) {
 	o := optional.SomeInt8(42)
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
+}
+
+func TestInt8Add(t *testing.T) {
+	var a int8 = 42
+	var b int8 = 12
+	A := optional.SomeInt8(a)
+	B := optional.SomeInt8(b)
+	none := optional.NoInt8()
+
+	C := A.Add(B)
+	c, ok := C.Get()
+	assert.Assert(t, ok, "value of adding non-none values was None")
+	assert.Equal(t, c, a+b, "add did not add correctly")
+
+	no := none.Add(none)
+	assert.Assert(t, no.IsNone(), "calling Add on two None types was not None")
 }
 
 func TestInt8String(t *testing.T) {
@@ -165,6 +197,22 @@ func TestInt16Type(t *testing.T) {
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
 
+func TestInt16Add(t *testing.T) {
+	var a int16 = 42
+	var b int16 = 12
+	A := optional.SomeInt16(a)
+	B := optional.SomeInt16(b)
+	none := optional.NoInt16()
+
+	C := A.Add(B)
+	c, ok := C.Get()
+	assert.Assert(t, ok, "value of adding non-none values was None")
+	assert.Equal(t, c, a+b, "add did not add correctly")
+
+	no := none.Add(none)
+	assert.Assert(t, no.IsNone(), "calling Add on two None types was not None")
+}
+
 func TestInt16String(t *testing.T) {
 	var i int16 = 42
 	iStr := strconv.FormatInt(int64(i), 10)
@@ -267,6 +315,22 @@ func TestInt32Type(t *testing.T) {
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
 
+func TestInt32Add(t *testing.T) {
+	var a int32 = 42
+	var b int32 = 12
+	A := optional.SomeInt32(a)
+	B := optional.SomeInt32(b)
+	none := optional.NoInt32()
+
+	C := A.Add(B)
+	c, ok := C.Get()
+	assert.Assert(t, ok, "value of adding non-none values was None")
+	assert.Equal(t, c, a+b, "add did not add correctly")
+
+	no := none.Add(none)
+	assert.Assert(t, no.IsNone(), "calling Add on two None types was not None")
+}
+
 func TestInt32String(t *testing.T) {
 	var i int32 = 42
 	iStr := strconv.FormatInt(int64(i), 10)
@@ -367,6 +431,22 @@ func TestInt32Sql(t *testing.T) {
 func TestInt64Type(t *testing.T) {
 	o := optional.SomeInt64(42)
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
+}
+
+func TestInt64Add(t *testing.T) {
+	var a int64 = 42
+	var b int64 = 12
+	A := optional.SomeInt64(a)
+	B := optional.SomeInt64(b)
+	none := optional.NoInt64()
+
+	C := A.Add(B)
+	c, ok := C.Get()
+	assert.Assert(t, ok, "value of adding non-none values was None")
+	assert.Equal(t, c, a+b, "add did not add correctly")
+
+	no := none.Add(none)
+	assert.Assert(t, no.IsNone(), "calling Add on two None types was not None")
 }
 
 func TestInt64String(t *testing.T) {

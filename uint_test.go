@@ -15,6 +15,22 @@ func TestUintType(t *testing.T) {
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
 
+func TestUintAdd(t *testing.T) {
+	var a uint = 42
+	var b uint = 12
+	A := optional.SomeUint(a)
+	B := optional.SomeUint(b)
+	none := optional.NoUint()
+
+	C := A.Add(B)
+	c, ok := C.Get()
+	assert.Assert(t, ok, "value of adding non-none values was None")
+	assert.Equal(t, c, a+b, "add did not add correctly")
+
+	no := none.Add(none)
+	assert.Assert(t, no.IsNone(), "calling Add on two None types was not None")
+}
+
 func TestUintString(t *testing.T) {
 	var i uint = 42
 	iStr := strconv.FormatUint(uint64(i), 10)
@@ -61,6 +77,22 @@ func TestUintUnmarshalText(t *testing.T) {
 func TestUint8Type(t *testing.T) {
 	o := optional.SomeUint8(42)
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
+}
+
+func TestUint8Add(t *testing.T) {
+	var a uint8 = 42
+	var b uint8 = 12
+	A := optional.SomeUint8(a)
+	B := optional.SomeUint8(b)
+	none := optional.NoUint8()
+
+	C := A.Add(B)
+	c, ok := C.Get()
+	assert.Assert(t, ok, "value of adding non-none values was None")
+	assert.Equal(t, c, a+b, "add did not add correctly")
+
+	no := none.Add(none)
+	assert.Assert(t, no.IsNone(), "calling Add on two None types was not None")
 }
 
 func TestUint8String(t *testing.T) {
@@ -165,6 +197,22 @@ func TestUint16Type(t *testing.T) {
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
 
+func TestUint16Add(t *testing.T) {
+	var a uint16 = 42
+	var b uint16 = 12
+	A := optional.SomeUint16(a)
+	B := optional.SomeUint16(b)
+	none := optional.NoUint16()
+
+	C := A.Add(B)
+	c, ok := C.Get()
+	assert.Assert(t, ok, "value of adding non-none values was None")
+	assert.Equal(t, c, a+b, "add did not add correctly")
+
+	no := none.Add(none)
+	assert.Assert(t, no.IsNone(), "calling Add on two None types was not None")
+}
+
 func TestUint16String(t *testing.T) {
 	var i uint16 = 42
 	iStr := strconv.FormatUint(uint64(i), 10)
@@ -267,6 +315,22 @@ func TestUint32Type(t *testing.T) {
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
 }
 
+func TestUint32Add(t *testing.T) {
+	var a uint32 = 42
+	var b uint32 = 12
+	A := optional.SomeUint32(a)
+	B := optional.SomeUint32(b)
+	none := optional.NoUint32()
+
+	C := A.Add(B)
+	c, ok := C.Get()
+	assert.Assert(t, ok, "value of adding non-none values was None")
+	assert.Equal(t, c, a+b, "add did not add correctly")
+
+	no := none.Add(none)
+	assert.Assert(t, no.IsNone(), "calling Add on two None types was not None")
+}
+
 func TestUint32String(t *testing.T) {
 	var f uint32 = 42
 	fStr := strconv.FormatUint(uint64(f), 10)
@@ -367,6 +431,22 @@ func TestUint32Sql(t *testing.T) {
 func TestUint64Type(t *testing.T) {
 	o := optional.SomeUint64(42)
 	assert.Equal(t, reflect.TypeOf(o).Name(), o.Type())
+}
+
+func TestUint64Add(t *testing.T) {
+	var a uint64 = 42
+	var b uint64 = 12
+	A := optional.SomeUint64(a)
+	B := optional.SomeUint64(b)
+	none := optional.NoUint64()
+
+	C := A.Add(B)
+	c, ok := C.Get()
+	assert.Assert(t, ok, "value of adding non-none values was None")
+	assert.Equal(t, c, a+b, "add did not add correctly")
+
+	no := none.Add(none)
+	assert.Assert(t, no.IsNone(), "calling Add on two None types was not None")
 }
 
 func TestUint64String(t *testing.T) {
